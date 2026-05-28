@@ -1,0 +1,7 @@
+flask
+gunicorn
+openai
+pandas
+numpy
+scikit-learn
+python-dotenv
