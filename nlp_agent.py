@@ -39,7 +39,7 @@ def analyze_user_input(user_text, current_params=None):
    - "ילדים גדולים" / "Older Kids" / ילדים מעל גיל 6 -> 4
    - "רק מבוגרים" / "Adults Only" / ללא ילדים -> 1
 4. a2_good_for_novice_owners (רמת ניסיון של הבעלים):
-   - "פעם ראשונה" / "First Time" / ללא ניסיון / "no experience" -> 5
+   - "כלב ראשון" / "פעם ראשונה" / "First Time" / "first dog" / ללא ניסיון / "no experience" -> 5
    - "גידלתי בעבר" / "Raised Before" / בעל ניסיון / "have experience" -> 1
 
 מאפיינים פיזיים (קריטי להחזיר בדיוק את ערכי ה-string הבאים באנגלית):
