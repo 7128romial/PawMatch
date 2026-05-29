@@ -91,8 +91,20 @@ def analyze_user_input(user_text, current_params=None, active_param=None):
 4. סביבת מגורים (a1_adapts_well_to_apartment_living):
    - "לא דירה" / "לא בית קטן" -> מפה ל-`a1_adapts_well_to_apartment_living: 1` (חצר גדולה).
 5. אורך פרווה ונשירה (Implications):
-   - "לא פרווה ארוכה" / "בלי פרווה ארוכה" / "no long hair" -> מפה אורך פרווה קצר `hair_length: "Short"`. בנוסף, השלם מכך שהמשתמש רוצה כלב שאינו משיר שיער, ולכן מפה גם רמת נשירה נמוכה `c1_amount_of_shedding: 1` או `2`.
-   - "ללא נשירה" / "אלרגי לשיער" / "hypoallergenic" -> מפה רמת נשירה נמוכה `c1_amount_of_shedding: 1` וכן אורך פרווה קצר `hair_length: "Short"`.
+    - "לא פרווה ארוכה" / "בלי פרווה ארוכה" / "no long hair" -> מפה אורך פרווה קצר `hair_length: "Short"`. בנוסף, השלם מכך שהמשתמש רוצה כלב שאינו משיר שיער, ולכן מפה גם רמת נשירה נמוכה `c1_amount_of_shedding: 1` או `2`.
+    - "ללא נשירה" / "אלרגי לשיער" / "hypoallergenic" -> מפה רמת נשירה נמוכה `c1_amount_of_shedding: 1` וכן אורך פרווה קצר `hair_length: "Short"`.
+6. רגישות לרעש ונביחות (d5_tendency_to_bark_or_howl):
+   - "כלב שקט", "רגיש לרעש", "בלי נביחות", "לא רוצה שינבח", "שלא ינבח", "שקט", "quiet dog", "noise sensitive" -> מפה ל-`d5_tendency_to_bark_or_howl: 1`.
+   - "כלב שמירה", "שינבח כשמישהו בא", "שמירה", "guard dog" -> מפה ל-`d5_tendency_to_bark_or_howl: 5`.
+7. רמת אנרגיה וצרכי ספורט (e1_energy_level, e3_exercise_needs):
+   - "אני רץ", "אוהב לרוץ", "פעיל מאוד", "ספורטיבי", "טיולים ארוכים בשטח", "active", "runner" -> מפה `e1_energy_level: 5` ו-`e3_exercise_needs: 5`.
+   - "בטטת כורסה", "כלב עצלן", "טיולים קצרים", "lazy", "couch potato" -> מפה `e1_energy_level: 1` ו-`e3_exercise_needs: 1`.
+8. חברות לכלבים אחרים בבית (b3_dog_friendly):
+   - "יש לי כלב", "גר עם עוד כלבים", "חברותי לכלבים אחרים", "other dogs" -> מפה ל-`b3_dog_friendly: 5`.
+9. רגישות לריור (c2_drooling_potential):
+   - "שלא ירייר", "בלי ריר", "נקי", "no drool" -> מפה ל-`c2_drooling_potential: 1`.
+10. רצון בכלב "דבק" ומפנק (b1_affectionate_with_family):
+    - "כלב מחבק", "כלב דבק", "כלב מפנק", "להתכרבל", "cuddly dog" -> מפה ל-`b1_affectionate_with_family: 5`.
 
 # שלב 4: התמודדות עם תשובות קצרות וחלקיות (כן/לא/יש/אין) על בסיס הפרמטר הפעיל
 המשתמש נשאל כעת שאלה לגבי הפרמטר הפעיל הבא (active_param): {active_param}
