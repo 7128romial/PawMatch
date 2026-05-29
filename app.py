@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, session, send_from_directory
 from dotenv import load_dotenv
 import os
-from nlp_agent import analyze_user_input
+from nlp_agent import analyze_user_input, generate_explanations
 from ml_engine import recommend_dogs
 
 load_dotenv()
@@ -148,18 +148,34 @@ def button_click():
 def process_recommendation(selects, text_params):
     rec = recommend_dogs(selects, text_params)
     lang = session.get('lang', 'he')
-    session.clear() # Reset for next
     
     if "error" in rec:
         err_msg = rec["error"]
         if lang == 'en' and err_msg == "Dataset not loaded.":
             err_msg = "Dataset not loaded."
+        session.clear()
         return jsonify({"response": err_msg})
         
+    dogs = rec.get("dogs", [])
+    
+    # Generate warm personalized explanations and breed details using GPT-3.5
+    explanations = []
+    if dogs:
+        explanations = generate_explanations(dogs, text_params, lang)
+        
+    # Merge explanations back into the dog records
+    explanation_map = {e.get("name"): e for e in explanations if isinstance(e, dict)}
+    for dog in dogs:
+        exp = explanation_map.get(dog.get("name"), {})
+        dog["match_reason"] = exp.get("match_reason", "")
+        dog["breed_info"] = exp.get("breed_info", "")
+        
+    session.clear() # Reset for next
+    
     response_payload = {
         "type": "result",
         "match_type": rec["type"],
-        "dogs": rec.get("dogs", []),
+        "dogs": dogs,
         "score": rec.get("score")
     }
     

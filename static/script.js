@@ -159,52 +159,47 @@ document.addEventListener('DOMContentLoaded', () => {
         let html = '';
         const trans = uiStrings[currentLang];
         
-        if (data.match_type === 'perfect') {
-            const dog = data.dogs[0];
-            html = `
-                <div class="results-container perfect-match">
-                    <div class="hero-card">
-                        <h3>${trans.perfectMatch}</h3>
-                        <div class="score-badge">${trans.scoreLabel}: ${data.score}%</div>
-                        <h2>${dog.name || 'Dog'} (${dog.breed})</h2>
-                        <div class="details">
-                            <p><i class="fa-solid fa-cake-candles"></i> ${trans.ageLabel}: ${dog.age_years} ${trans.years}</p>
-                            <p><i class="fa-solid fa-weight-scale"></i> ${trans.weightLabel}: ${dog.weight_kg} ${trans.kg}</p>
-                            <p><i class="fa-solid fa-paw"></i> ${trans.sizeLabel}: ${translateSize(dog.size)}</p>
-                            <p><i class="fa-solid fa-palette"></i> ${trans.colorLabel}: ${translateColor(dog.color)}</p>
-                        </div>
-                    </div>
-                    <div class="action-btns">
-                        <button onclick="window.location.reload()"><i class="fa-solid fa-rotate-right"></i> ${trans.startOver}</button>
-                    </div>
-                </div>
-            `;
-        } else {
-            const warningText = data.message || trans.partialWarning;
-            const lowConfidence = data.score ? '' : `<div style="color:var(--danger); margin-bottom:1rem;">${warningText}</div>`;
-            let cards = data.dogs.map(dog => `
-                <div class="dog-card">
-                    <div class="score">${dog.match_score ? dog.match_score + '%' : trans.alternative}</div>
+        const warningText = data.message || trans.partialWarning;
+        // Show disclaimer/warning if we don't have a high confidence score
+        const lowConfidence = data.score ? '' : `<div style="color:var(--danger); margin-bottom:1rem;">${warningText}</div>`;
+        
+        let cards = data.dogs.map(dog => {
+            const matchReasonHtml = dog.match_reason 
+                ? `<div class="match-reason"><strong>💡 ${currentLang === 'he' ? 'למה זה מתאים לכם:' : 'Why you match:'}</strong> ${dog.match_reason}</div>` 
+                : '';
+            const breedInfoHtml = dog.breed_info 
+                ? `<div class="breed-info"><strong>ℹ️ ${currentLang === 'he' ? 'מידע על הגזע:' : 'About the Breed:'}</strong> ${dog.breed_info}</div>` 
+                : '';
+                
+            return `
+                <div class="dog-card premium-card">
+                    <div class="score-badge-card">${dog.match_score ? dog.match_score + '%' : trans.alternative}</div>
                     <h4>${dog.name || 'Dog'} (${dog.breed})</h4>
-                    <p>${trans.ageLabel}: ${dog.age_years} | ${trans.weightLabel}: ${dog.weight_kg}</p>
-                    <p>${trans.sizeLabel}: ${translateSize(dog.size)} | ${trans.colorLabel}: ${translateColor(dog.color)}</p>
-                </div>
-            `).join('');
-            
-            html = `
-                ${lowConfidence}
-                <div class="results-container partial-match">
-                    ${cards}
-                </div>
-                <div class="action-btns">
-                    <button onclick="window.location.reload()"><i class="fa-solid fa-rotate-right"></i> ${trans.startOver}</button>
+                    <div class="dog-specs">
+                        <span><i class="fa-solid fa-cake-candles"></i> ${trans.ageLabel}: ${dog.age_years} ${trans.years}</span>
+                        <span><i class="fa-solid fa-weight-scale"></i> ${trans.weightLabel}: ${dog.weight_kg} ${trans.kg}</span>
+                        <span><i class="fa-solid fa-paw"></i> ${trans.sizeLabel}: ${translateSize(dog.size)}</span>
+                        <span><i class="fa-solid fa-palette"></i> ${trans.colorLabel}: ${translateColor(dog.color)}</span>
+                    </div>
+                    ${matchReasonHtml}
+                    ${breedInfoHtml}
                 </div>
             `;
-            
-            // Highlight disclaimer if partial match with low info
-            if (!data.score) {
-                document.getElementById('disclaimer-card').classList.add('low-confidence');
-            }
+        }).join('');
+        
+        html = `
+            ${lowConfidence}
+            <div class="results-container vertical-match-list">
+                ${cards}
+            </div>
+            <div class="action-btns">
+                <button onclick="window.location.reload()"><i class="fa-solid fa-rotate-right"></i> ${trans.startOver}</button>
+            </div>
+        `;
+        
+        // Highlight disclaimer if partial match with low info
+        if (!data.score) {
+            document.getElementById('disclaimer-card').classList.add('low-confidence');
         }
         return html;
     }

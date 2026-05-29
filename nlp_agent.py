@@ -102,3 +102,58 @@ def analyze_user_input(user_text, current_params=None):
             "extracted_parameters": {},
             "error": str(e)
         }
+
+def generate_explanations(dogs, user_params, lang='he'):
+    dogs_info = []
+    for d in dogs:
+        dogs_info.append({
+            "name": d.get("name"),
+            "breed": d.get("breed"),
+            "match_score": d.get("match_score"),
+            "sex": d.get("sex"),
+            "size": d.get("size"),
+            "color": d.get("color"),
+            "hair_length": d.get("hair_length"),
+            "a1_adapts_well_to_apartment_living": d.get("a1_adapts_well_to_apartment_living"),
+            "a4_tolerates_being_alone": d.get("a4_tolerates_being_alone"),
+            "b2_incredibly_kid_friendly_dogs": d.get("b2_incredibly_kid_friendly_dogs"),
+            "a2_good_for_novice_owners": d.get("a2_good_for_novice_owners")
+        })
+        
+    system_prompt = f"""
+You are a warm, professional dog adoption coordinator for PawMatch.
+Write personalized explanations and breed descriptions for 3 recommended dogs.
+Generate your response in JSON format. The response language must be strictly: {"Hebrew (עברית)" if lang == 'he' else "English"}.
+
+Output JSON structure:
+{{
+  "explanations": [
+    {{
+      "name": "Dog_Name",
+      "match_reason": "A 1-2 sentence explanation of why this specific dog is a match for the user's parameters. Reference the user's environment/needs (e.g. apartment, hours alone, kids, etc.).",
+      "breed_info": "A 1-2 sentence description of the breed's general temperament, origins, and key characteristics."
+    }}
+  ]
+}}
+"""
+
+    user_prompt = f"""
+User parameters: {json.dumps(user_params)}
+Recommended dogs data: {json.dumps(dogs_info)}
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={ "type": "json_object" },
+            temperature=0.7
+        )
+        result = json.loads(response.choices[0].message.content)
+        return result.get("explanations", [])
+    except Exception as e:
+        print(f"OpenAI API Error in generate_explanations: {e}")
+        return []

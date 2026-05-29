@@ -124,34 +124,53 @@ def recommend_dogs(selects, text_params):
     filtered_df = filtered_df.sort_values('match_score', ascending=False)
     
     if len(filtered_df) == 0:
-        # Extreme edge case, return similarity
-        user_vector = np.full(len(numerical_cols), 0.5) # Default
+        # Cosine similarity fallback if all filters cut out
+        user_vector = np.full(len(numerical_cols), 0.5)
         for p, v in text_params.items():
             if p in numerical_cols:
                 idx = numerical_cols.index(p)
                 min_v, max_v = scaler.data_min_[idx], scaler.data_max_[idx]
                 user_vector[idx] = (v - min_v) / (max_v - min_v) if max_v > min_v else 0.5
         top_dogs = get_fallback_similar(user_vector, 3)
-        return {"type": "partial", "dogs": top_dogs.to_dict(orient="records"), "message": "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל."}
-
-    top_dog = filtered_df.iloc[0]
-    
-    if top_dog['match_score'] >= 90:
-        return {
-            "type": "perfect",
-            "score": round(top_dog['match_score']),
-            "dogs": [top_dog.to_dict()]
-        }
-    else:
-        # Partial match - take top 3
-        top_3 = filtered_df.head(3)
         dogs_list = []
-        for _, d in top_3.iterrows():
+        for _, d in top_dogs.iterrows():
             d_dict = d.to_dict()
-            d_dict['match_score'] = round(d['match_score'])
+            d_dict['match_score'] = 70
             dogs_list.append(d_dict)
-            
-        return {
-            "type": "partial",
-            "dogs": dogs_list
-        }
+        return {"type": "result", "dogs": dogs_list, "message": "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל."}
+
+    # If we have less than 3, pad with cosine fallback
+    if len(filtered_df) < 3:
+        user_vector = np.full(len(numerical_cols), 0.5)
+        for p, v in text_params.items():
+            if p in numerical_cols:
+                idx = numerical_cols.index(p)
+                min_v, max_v = scaler.data_min_[idx], scaler.data_max_[idx]
+                user_vector[idx] = (v - min_v) / (max_v - min_v) if max_v > min_v else 0.5
+        similar_dogs = get_fallback_similar(user_vector, 10)
+        existing_names = set(filtered_df['name'])
+        
+        # Standardize matching columns
+        padded_rows = []
+        for _, d in similar_dogs.iterrows():
+            if len(filtered_df) + len(padded_rows) >= 3:
+                break
+            if d['name'] not in existing_names:
+                d_dict = d.to_dict()
+                d_dict['match_score'] = 65
+                padded_rows.append(d_dict)
+        if padded_rows:
+            filtered_df = pd.concat([filtered_df, pd.DataFrame(padded_rows)], ignore_index=True)
+
+    # Always take top 3
+    top_3 = filtered_df.head(3)
+    dogs_list = []
+    for _, d in top_3.iterrows():
+        d_dict = d.to_dict()
+        d_dict['match_score'] = int(round(d['match_score'])) if pd.notna(d['match_score']) else 70
+        dogs_list.append(d_dict)
+        
+    return {
+        "type": "result",
+        "dogs": dogs_list
+    }
