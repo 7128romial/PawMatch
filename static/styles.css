@@ -199,7 +199,7 @@ html[dir="ltr"] .sidebar {
 
 
 .chat-disclaimer-banner {
-    display: flex;
+    display: none; /* Hidden on desktop to avoid duplication with sidebar disclaimer */
     justify-content: space-between;
     align-items: center;
     background: rgba(239, 68, 68, 0.08);
@@ -450,6 +450,7 @@ input[type="text"]:focus { border-color: var(--accent); background: rgba(255, 25
     }
     
     .chat-disclaimer-banner {
+        display: flex; /* Show disclaimer banner on mobile as a replacement for the hidden sidebar */
         padding: 0.6rem 1rem;
         gap: 0.8rem;
     }
