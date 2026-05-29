@@ -7,7 +7,8 @@ from ml_engine import recommend_dogs
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+# Use a stable secret key to keep session valid across restarts and gunicorn workers
+app.secret_key = os.getenv("SECRET_KEY", "pawmatch_secure_production_key_2026")
 
 @app.route('/')
 def index():
@@ -19,8 +20,8 @@ def serve_static(path):
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    data = request.json
-    user_message = data.get('message', '')
+    data = request.json or {}
+    user_message = data.get('message', data.get('selection', ''))
     selects = data.get('selects', {})
     skip_to_results = data.get('skip', False)
     
@@ -29,6 +30,8 @@ def chat():
         session['text_params'] = {}
     if 'no_preference_count' not in session:
         session['no_preference_count'] = 0
+    if 'state_b_count' not in session:
+        session['state_b_count'] = 0
         
     if skip_to_results or session['no_preference_count'] >= 2:
         return process_recommendation(selects, session['text_params'])
@@ -53,10 +56,16 @@ def chat():
     if state == "state_a":
         return jsonify({"response": "אני יודע לעזור רק בהתאמת גזע כלב, ספרי לי על הסביבה שלך ועל מה את מחפשת."})
         
-    elif state == "state_b":
-        return jsonify({"response": "אשמח לשמוע עוד פרטים כלליים: איפה את גרה? כמה זמן את בבית? ואיזה אופי כלב מתאים לך?"})
-        
-    elif state == "state_c":
+    if state == "state_b":
+        session['state_b_count'] = session.get('state_b_count', 0) + 1
+        # If user is stuck in state_b for consecutive requests, upgrade to state_c to guide them
+        if session['state_b_count'] >= 2:
+            state = "state_c"
+        else:
+            return jsonify({"response": "אשמח לשמוע עוד פרטים כלליים: איפה את גרה? כמה זמן את בבית? ואיזה אופי כלב מתאים לך?"})
+            
+    if state == "state_c":
+        session['state_b_count'] = 0
         # Missing some info, ask a specific question with buttons
         missing = get_missing_critical(session['text_params'])
         if missing:
@@ -66,10 +75,11 @@ def chat():
                 "options": options
             })
         else:
-            # Somehow it's C but we have criticals, treat as D
-            return process_recommendation(selects, session['text_params'])
+            # If we somehow have all critical parameters, treat as state_d
+            state = "state_d"
             
-    elif state == "state_d":
+    if state == "state_d":
+        session['state_b_count'] = 0
         return process_recommendation(selects, session['text_params'])
 
     return jsonify({"response": "לא הצלחתי להבין, אפשר לנסח שוב?"})
@@ -94,13 +104,14 @@ def generate_question(param_key):
 
 @app.route('/api/button_click', methods=['POST'])
 def button_click():
-    data = request.json
+    data = request.json or {}
     selection = data.get('selection')
     
     if selection == "אין לי העדפה":
         session['no_preference_count'] = session.get('no_preference_count', 0) + 1
         
-    # Treat as normal chat input to let NLP map the button text to param values
+    # Inject selection as message so chat() can process it
+    data['message'] = selection
     return chat()
 
 def process_recommendation(selects, text_params):
