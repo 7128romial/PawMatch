@@ -157,6 +157,11 @@ def chat():
     if current_session_state in ["state_c", "state_d"] and state in ["state_a", "state_b"]:
         state = current_session_state
         
+    # Force state to state_c if there are still missing critical parameters
+    missing_criticals = get_missing_critical(session['text_params'])
+    if missing_criticals and state == "state_d":
+        state = "state_c"
+        
     # State Machine Logic
     if state == "state_a":
         session['state'] = "state_a"
@@ -293,13 +298,17 @@ def process_recommendation(selects, text_params):
         dog["match_reason"] = exp.get("match_reason", "")
         dog["breed_info"] = exp.get("breed_info", "")
         
+    is_full_match = len(get_missing_critical(text_params)) == 0
+    top_score = dogs[0].get("match_score") if dogs else 0
+    score_val = top_score if (is_full_match and top_score >= 90) else None
+
     session.clear() # Reset for next
     
     response_payload = {
         "type": "result",
         "match_type": rec["type"],
         "dogs": dogs,
-        "score": rec.get("score"),
+        "score": score_val,
         "session_data": {}
     }
     
