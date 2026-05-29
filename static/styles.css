@@ -147,6 +147,31 @@ body {
 }
 .skip-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); border-color: var(--text-primary); }
 
+.header-actions {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+}
+
+.lang-btn {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid var(--accent);
+    color: var(--text-primary);
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+.lang-btn:hover {
+    background: var(--accent);
+    color: white;
+}
+
 
 
 .chat-messages {

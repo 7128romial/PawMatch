@@ -24,6 +24,10 @@ def chat():
     user_message = data.get('message', data.get('selection', ''))
     selects = data.get('selects', {})
     skip_to_results = data.get('skip', False)
+    lang = data.get('lang', 'he')
+    
+    # Store active language in session
+    session['lang'] = lang
     
     # Initialize session state if not exists
     if 'text_params' not in session:
@@ -37,13 +41,15 @@ def chat():
         return process_recommendation(selects, session['text_params'])
         
     if not user_message:
-        return jsonify({"response": "אנא הכנס טקסט."})
+        err_msg = "Please enter text." if lang == 'en' else "אנא הכנס טקסט."
+        return jsonify({"response": err_msg})
         
     # Analyze input
     nlp_result = analyze_user_input(user_message, session['text_params'])
     
     if nlp_result.get("state") == "error":
-        return jsonify({"response": "שגיאה בחיבור למודל. אנא בדוק מפתח API."})
+        err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
+        return jsonify({"response": err_msg})
         
     state = nlp_result.get('state')
     extracted = nlp_result.get('extracted_parameters', {})
@@ -54,7 +60,8 @@ def chat():
         
     # State Machine Logic
     if state == "state_a":
-        return jsonify({"response": "אני יודע לעזור רק בהתאמת גזע כלב, ספרי לי על הסביבה שלך ועל מה את מחפשת."})
+        msg = "I can only help with matching dog breeds. Tell me about your environment and what you are looking for." if lang == 'en' else "אני יודע לעזור רק בהתאמת גזע כלב, ספרי לי על הסביבה שלך ועל מה את מחפשת."
+        return jsonify({"response": msg})
         
     if state == "state_b":
         session['state_b_count'] = session.get('state_b_count', 0) + 1
@@ -62,14 +69,15 @@ def chat():
         if session['state_b_count'] >= 2:
             state = "state_c"
         else:
-            return jsonify({"response": "אשמח לשמוע עוד פרטים כלליים: איפה את גרה? כמה זמן את בבית? ואיזה אופי כלב מתאים לך?"})
+            msg = "I'd love to hear more general details: Where do you live? How much time are you home? And what kind of dog personality matches you?" if lang == 'en' else "אשמח לשמוע עוד פרטים כלליים: איפה את גרה? כמה זמן את בבית? ואיזה אופי כלב מתאים לך?"
+            return jsonify({"response": msg})
             
     if state == "state_c":
         session['state_b_count'] = 0
         # Missing some info, ask a specific question with buttons
         missing = get_missing_critical(session['text_params'])
         if missing:
-            question, options = generate_question(missing[0])
+            question, options = generate_question(missing[0], lang)
             return jsonify({
                 "response": question,
                 "options": options
@@ -82,7 +90,8 @@ def chat():
         session['state_b_count'] = 0
         return process_recommendation(selects, session['text_params'])
 
-    return jsonify({"response": "לא הצלחתי להבין, אפשר לנסח שוב?"})
+    msg = "I couldn't understand, could you rephrase?" if lang == 'en' else "לא הצלחתי להבין, אפשר לנסח שוב?"
+    return jsonify({"response": msg})
 
 def get_missing_critical(params):
     criticals = [
@@ -97,8 +106,8 @@ def get_missing_critical(params):
     ]
     return [c for c in criticals if c not in params]
 
-def generate_question(param_key):
-    questions = {
+def generate_question(param_key, lang='he'):
+    questions_he = {
         'a1_adapts_well_to_apartment_living': ("איפה הכלב יגור?", ["דירה קטנה", "דירה בינונית", "בית עם חצר", "אין לי העדפה"]),
         'a4_tolerates_being_alone': ("כמה שעות הכלב יהיה לבד ביום?", ["מעט מאוד", "חצי יום", "יום שלם", "אין לי העדפה"]),
         'b2_incredibly_kid_friendly_dogs': ("האם יש ילדים או חיות בבית?", ["כן, ילדים קטנים", "ילדים גדולים", "רק מבוגרים", "אין לי העדפה"]),
@@ -108,14 +117,28 @@ def generate_question(param_key):
         'hair_length': ("איזה אורך פרווה את מעדיפה?", ["קצרה", "ארוכה", "אין לי העדפה"]),
         'color': ("איזה צבע פרווה את מעדיפה?", ["שחור", "לבן", "חום", "אפור", "מעורב", "אין לי העדפה"])
     }
-    return questions.get(param_key, ("חסר לי קצת מידע, להמשיך לתוצאות?", ["כן", "אין לי העדפה"]))
+    
+    questions_en = {
+        'a1_adapts_well_to_apartment_living': ("Where will the dog live?", ["Small Apartment", "Medium Apartment", "House with Yard", "No Preference"]),
+        'a4_tolerates_being_alone': ("How many hours will the dog be alone daily?", ["Very Few", "Half Day", "Full Day", "No Preference"]),
+        'b2_incredibly_kid_friendly_dogs': ("Are there children or other pets at home?", ["Yes, Young Kids", "Older Kids", "Adults Only", "No Preference"]),
+        'a2_good_for_novice_owners': ("What is your experience level with dogs?", ["Raised Before", "First Time", "No Preference"]),
+        'sex': ("Which gender do you prefer?", ["Male", "Female", "No Preference"]),
+        'size': ("Which size fits you best?", ["Small", "Medium", "Large", "No Preference"]),
+        'hair_length': ("Which coat length do you prefer?", ["Short", "Long", "No Preference"]),
+        'color': ("Do you have any coat color preference?", ["Black", "White", "Brown", "Gray", "Mixed", "No Preference"])
+    }
+    
+    if lang == 'en':
+        return questions_en.get(param_key, ("I need a bit more info, proceed to results?", ["Yes", "No Preference"]))
+    return questions_he.get(param_key, ("חסר לי קצת מידע, להמשיך לתוצאות?", ["כן", "אין לי העדפה"]))
 
 @app.route('/api/button_click', methods=['POST'])
 def button_click():
     data = request.json or {}
     selection = data.get('selection')
     
-    if selection == "אין לי העדפה":
+    if selection in ["אין לי העדפה", "No Preference"]:
         session['no_preference_count'] = session.get('no_preference_count', 0) + 1
         
     # Inject selection as message so chat() can process it
@@ -124,17 +147,29 @@ def button_click():
 
 def process_recommendation(selects, text_params):
     rec = recommend_dogs(selects, text_params)
+    lang = session.get('lang', 'he')
     session.clear() # Reset for next
     
     if "error" in rec:
-        return jsonify({"response": rec["error"]})
+        err_msg = rec["error"]
+        if lang == 'en' and err_msg == "Dataset not loaded.":
+            err_msg = "Dataset not loaded."
+        return jsonify({"response": err_msg})
         
-    return jsonify({
+    response_payload = {
         "type": "result",
         "match_type": rec["type"],
         "dogs": rec.get("dogs", []),
         "score": rec.get("score")
-    })
+    }
+    
+    if "message" in rec:
+        msg = rec["message"]
+        if lang == 'en' and msg == "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל.":
+            msg = "No direct match found. Here are the dogs most similar to your profile."
+        response_payload["message"] = msg
+        
+    return jsonify(response_payload)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
