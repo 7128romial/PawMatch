@@ -36,7 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alternative: 'חלופה',
             communicationError: 'שגיאת תקשורת מול השרת.',
             skipUserMessage: 'הציגי לי תוצאות חלקיות עכשיו',
-            enterTextPrompt: 'אנא הכנס טקסט.'
+            enterTextPrompt: 'אנא הכנס טקסט.',
+            otherTextPrompt: 'ספרו לי בפירוט בתיבת הטקסט מטה:'
         },
         en: {
             disclaimerTitle: '<i class="fa-solid fa-triangle-exclamation"></i> Ethical Disclaimer',
@@ -64,7 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alternative: 'Alternative',
             communicationError: 'Communication error with the server.',
             skipUserMessage: 'Show me partial results now',
-            enterTextPrompt: 'Please enter text.'
+            enterTextPrompt: 'Please enter text.',
+            otherTextPrompt: 'Please describe in detail in the text box below:'
         }
     };
 
@@ -318,6 +320,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Expose for inline onclick
     window.handleChatBtn = function(optionText) {
+        if (optionText === 'אחר' || optionText === 'Other') {
+            const trans = uiStrings[currentLang];
+            addMessage(optionText, 'user');
+            addMessage(trans.otherTextPrompt, 'agent');
+            userInput.focus();
+            return;
+        }
         addMessage(optionText, 'user');
         sendMessage(optionText, false, true);
     };
