@@ -18,6 +18,33 @@ def index():
 def serve_static(path):
     return send_from_directory('static', path)
 
+button_mappings = {
+    'sex': {
+        'זכר': 'Male', 'Male': 'Male',
+        'נקבה': 'Female', 'Female': 'Female',
+        'אין לי העדפה': 'No Preference', 'No Preference': 'No Preference'
+    },
+    'size': {
+        'קטן': 'Small', 'Small': 'Small',
+        'בינוני': 'Medium', 'Medium': 'Medium',
+        'גדול': 'Large', 'Large': 'Large',
+        'אין לי העדפה': 'No Preference', 'No Preference': 'No Preference'
+    },
+    'hair_length': {
+        'קצרה': 'Short', 'Short': 'Short',
+        'ארוכה': 'Long', 'Long': 'Long',
+        'אין לי העדפה': 'No Preference', 'No Preference': 'No Preference'
+    },
+    'color': {
+        'שחור': 'Black', 'Black': 'Black',
+        'לבן': 'White', 'White': 'White',
+        'חום': 'Tan', 'Brown': 'Tan', 'Tan': 'Tan',
+        'אפור': 'Gray', 'Gray': 'Gray',
+        'מעורב': 'Bicolor', 'Mixed': 'Bicolor',
+        'אין לי העדפה': 'No Preference', 'No Preference': 'No Preference'
+    }
+}
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json or {}
@@ -44,8 +71,38 @@ def chat():
         err_msg = "Please enter text." if lang == 'en' else "אנא הכנס טקסט."
         return jsonify({"response": err_msg})
         
-    # Analyze input
-    nlp_result = analyze_user_input(user_message, session['text_params'])
+    # Get missing parameters before processing
+    missing_before = get_missing_critical(session['text_params'])
+    
+    # Intercept button selections / "No Preference" in the backend
+    is_button_option = False
+    extracted_val = None
+    if missing_before:
+        current_param = missing_before[0]
+        if current_param in button_mappings:
+            msg_key = user_message.strip()
+            if msg_key in button_mappings[current_param]:
+                extracted_val = button_mappings[current_param][msg_key]
+                is_button_option = True
+            elif msg_key.lower() in {k.lower(): v for k, v in button_mappings[current_param].items()}:
+                extracted_val = {k.lower(): v for k, v in button_mappings[current_param].items()}[msg_key.lower()]
+                is_button_option = True
+
+    if is_button_option:
+        session['text_params'][current_param] = extracted_val
+        # Bypass the LLM API call, preserve the session state
+        nlp_result = {"state": session.get('state', "state_c"), "extracted_parameters": {}}
+    elif user_message in ["אין לי העדפה", "No Preference"] and missing_before:
+        current_param = missing_before[0]
+        if current_param in ['sex', 'size', 'hair_length', 'color']:
+            session['text_params'][current_param] = "No Preference"
+        else:
+            session['text_params'][current_param] = 3
+        # Bypass the LLM API call
+        nlp_result = {"state": session.get('state', "state_c"), "extracted_parameters": {}}
+    else:
+        # Analyze input normally via LLM
+        nlp_result = analyze_user_input(user_message, session['text_params'])
     
     if nlp_result.get("state") == "error":
         err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
@@ -58,8 +115,14 @@ def chat():
     for k, v in extracted.items():
         session['text_params'][k] = v
         
+    # Prevent regression: if current session state is state_c or state_d, do not regress to state_a or state_b
+    current_session_state = session.get('state', 'state_b')
+    if current_session_state in ["state_c", "state_d"] and state in ["state_a", "state_b"]:
+        state = current_session_state
+        
     # State Machine Logic
     if state == "state_a":
+        session['state'] = "state_a"
         msg = "I can only help with matching dog breeds. Tell me about your environment and what you are looking for." if lang == 'en' else "אני יודע לעזור רק בהתאמת גזע כלב, ספרי לי על הסביבה שלך ועל מה את מחפשת."
         return jsonify({"response": msg})
         
@@ -69,11 +132,13 @@ def chat():
         if session['state_b_count'] >= 2:
             state = "state_c"
         else:
+            session['state'] = "state_b"
             msg = "I'd love to hear more general details: Where do you live? How much time are you home? And what kind of dog personality matches you?" if lang == 'en' else "אשמח לשמוע עוד פרטים כלליים: איפה את גרה? כמה זמן את בבית? ואיזה אופי כלב מתאים לך?"
             return jsonify({"response": msg})
             
     if state == "state_c":
         session['state_b_count'] = 0
+        session['state'] = "state_c"
         # Missing some info, ask a specific question with buttons
         missing = get_missing_critical(session['text_params'])
         if missing:
@@ -88,8 +153,10 @@ def chat():
             
     if state == "state_d":
         session['state_b_count'] = 0
+        session['state'] = "state_d"
         return process_recommendation(selects, session['text_params'])
 
+    session['state'] = state
     msg = "I couldn't understand, could you rephrase?" if lang == 'en' else "לא הצלחתי להבין, אפשר לנסח שוב?"
     return jsonify({"response": msg})
 
