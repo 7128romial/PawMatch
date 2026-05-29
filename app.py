@@ -45,6 +45,19 @@ button_mappings = {
     }
 }
 
+@app.route('/api/reset', methods=['POST'])
+def reset():
+    session.clear()
+    return jsonify({"status": "success"})
+
+def build_session_data():
+    return {
+        "text_params": session.get('text_params', {}),
+        "state": session.get('state', 'state_b'),
+        "no_preference_count": session.get('no_preference_count', 0),
+        "state_b_count": session.get('state_b_count', 0)
+    }
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json or {}
@@ -56,20 +69,41 @@ def chat():
     # Store active language in session
     session['lang'] = lang
     
-    # Initialize session state if not exists
-    if 'text_params' not in session:
-        session['text_params'] = {}
-    if 'no_preference_count' not in session:
-        session['no_preference_count'] = 0
-    if 'state_b_count' not in session:
-        session['state_b_count'] = 0
+    # Load session data from request payload or fallback to Flask session
+    client_session = data.get('session_data') or {}
+    
+    text_params = client_session.get('text_params')
+    if text_params is None:
+        if 'text_params' not in session:
+            session['text_params'] = {}
+        text_params = session['text_params']
+    else:
+        session['text_params'] = text_params
+        
+    no_preference_count = client_session.get('no_preference_count')
+    if no_preference_count is None:
+        no_preference_count = session.get('no_preference_count', 0)
+    session['no_preference_count'] = no_preference_count
+    
+    state_b_count = client_session.get('state_b_count')
+    if state_b_count is None:
+        state_b_count = session.get('state_b_count', 0)
+    session['state_b_count'] = state_b_count
+    
+    current_session_state = client_session.get('state')
+    if current_session_state is None:
+        current_session_state = session.get('state', 'state_b')
+    session['state'] = current_session_state
         
     if skip_to_results or session['no_preference_count'] >= 2:
         return process_recommendation(selects, session['text_params'])
         
     if not user_message:
         err_msg = "Please enter text." if lang == 'en' else "אנא הכנס טקסט."
-        return jsonify({"response": err_msg})
+        return jsonify({
+            "response": err_msg,
+            "session_data": build_session_data()
+        })
         
     # Get missing parameters before processing
     missing_before = get_missing_critical(session['text_params'])
@@ -106,7 +140,10 @@ def chat():
     
     if nlp_result.get("state") == "error":
         err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
-        return jsonify({"response": err_msg})
+        return jsonify({
+            "response": err_msg,
+            "session_data": build_session_data()
+        })
         
     state = nlp_result.get('state')
     extracted = nlp_result.get('extracted_parameters', {})
@@ -124,7 +161,10 @@ def chat():
     if state == "state_a":
         session['state'] = "state_a"
         msg = "I can only help with matching dog breeds. Tell me about your environment and what you are looking for." if lang == 'en' else "אני יודע לעזור רק בהתאמת גזע כלב, ספרי לי על הסביבה שלך ועל מה את מחפשת."
-        return jsonify({"response": msg})
+        return jsonify({
+            "response": msg,
+            "session_data": build_session_data()
+        })
         
     if state == "state_b":
         session['state_b_count'] = session.get('state_b_count', 0) + 1
@@ -134,7 +174,10 @@ def chat():
         else:
             session['state'] = "state_b"
             msg = "I'd love to hear more general details: Where do you live? How much time are you home? And what kind of dog personality matches you?" if lang == 'en' else "אשמח לשמוע עוד פרטים כלליים: איפה את גרה? כמה זמן את בבית? ואיזה אופי כלב מתאים לך?"
-            return jsonify({"response": msg})
+            return jsonify({
+                "response": msg,
+                "session_data": build_session_data()
+            })
             
     if state == "state_c":
         session['state_b_count'] = 0
@@ -145,7 +188,8 @@ def chat():
             question, options = generate_question(missing[0], lang)
             return jsonify({
                 "response": question,
-                "options": options
+                "options": options,
+                "session_data": build_session_data()
             })
         else:
             # If we somehow have all critical parameters, treat as state_d
@@ -158,7 +202,10 @@ def chat():
 
     session['state'] = state
     msg = "I couldn't understand, could you rephrase?" if lang == 'en' else "לא הצלחתי להבין, אפשר לנסח שוב?"
-    return jsonify({"response": msg})
+    return jsonify({
+        "response": msg,
+        "session_data": build_session_data()
+    })
 
 def get_missing_critical(params):
     criticals = [
@@ -205,6 +252,12 @@ def button_click():
     data = request.json or {}
     selection = data.get('selection')
     
+    client_session = data.get('session_data') or {}
+    session['text_params'] = client_session.get('text_params', session.get('text_params', {}))
+    session['no_preference_count'] = client_session.get('no_preference_count', session.get('no_preference_count', 0))
+    session['state_b_count'] = client_session.get('state_b_count', session.get('state_b_count', 0))
+    session['state'] = client_session.get('state', session.get('state', 'state_b'))
+    
     if selection in ["אין לי העדפה", "No Preference"]:
         session['no_preference_count'] = session.get('no_preference_count', 0) + 1
         
@@ -221,7 +274,10 @@ def process_recommendation(selects, text_params):
         if lang == 'en' and err_msg == "Dataset not loaded.":
             err_msg = "Dataset not loaded."
         session.clear()
-        return jsonify({"response": err_msg})
+        return jsonify({
+            "response": err_msg,
+            "session_data": {}
+        })
         
     dogs = rec.get("dogs", [])
     
@@ -243,7 +299,8 @@ def process_recommendation(selects, text_params):
         "type": "result",
         "match_type": rec["type"],
         "dogs": dogs,
-        "score": rec.get("score")
+        "score": rec.get("score"),
+        "session_data": {}
     }
     
     if "message" in rec:

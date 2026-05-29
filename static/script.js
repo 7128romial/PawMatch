@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const skipBtn = document.getElementById('skip-btn');
     const langToggleBtn = document.getElementById('lang-toggle-btn');
     
-    let currentLang = 'he'; // Default to Hebrew
+    let currentLang = localStorage.getItem('pawmatch_lang') || 'he'; // Persisted language preference
     let isWaitingForResults = false;
 
     // Translation Dictionaries
@@ -129,7 +129,45 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function addMessage(content, sender, isHtml = false) {
+    function saveChatHistory() {
+        const messages = [];
+        chatMessages.querySelectorAll('.message').forEach(msgDiv => {
+            const sender = msgDiv.classList.contains('user') ? 'user' : 'agent';
+            const contentDiv = msgDiv.querySelector('.message-content');
+            messages.push({
+                sender: sender,
+                content: contentDiv.innerHTML
+            });
+        });
+        localStorage.setItem('pawmatch_chat_history', JSON.stringify(messages));
+    }
+
+    function loadChatHistory() {
+        const saved = localStorage.getItem('pawmatch_chat_history');
+        if (saved) {
+            try {
+                const messages = JSON.parse(saved);
+                if (messages && messages.length > 0) {
+                    chatMessages.innerHTML = '';
+                    messages.forEach(msg => {
+                        addMessage(msg.content, msg.sender, true, false);
+                    });
+                    const hasResult = messages.some(msg => msg.content.includes('results-container') || msg.content.includes('dog-card'));
+                    if (hasResult) {
+                        skipBtn.style.display = 'none';
+                    } else {
+                        skipBtn.style.display = 'block';
+                    }
+                    return;
+                }
+            } catch (e) {
+                console.error("Error loading chat history:", e);
+            }
+        }
+        updateUIStrings();
+    }
+
+    function addMessage(content, sender, isHtml = false, saveToStorage = true) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${sender}`;
         const contentDiv = document.createElement('div');
@@ -139,6 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.appendChild(contentDiv);
         chatMessages.appendChild(msgDiv);
         scrollToBottom();
+        if (saveToStorage) {
+            saveChatHistory();
+        }
     }
 
     function addTypingIndicator() {
@@ -193,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${cards}
             </div>
             <div class="action-btns">
-                <button onclick="window.location.reload()"><i class="fa-solid fa-rotate-right"></i> ${trans.startOver}</button>
+                <button onclick="window.handleStartOver()"><i class="fa-solid fa-rotate-right"></i> ${trans.startOver}</button>
             </div>
         `;
         
@@ -217,11 +258,13 @@ document.addEventListener('DOMContentLoaded', () => {
         skipBtn.style.display = 'block'; // Show skip button after first interaction
 
         try {
+            const savedSessionData = localStorage.getItem('pawmatch_session_data');
+            const sessionData = savedSessionData ? JSON.parse(savedSessionData) : null;
+
             const endpoint = isButton ? '/api/button_click' : '/api/chat';
-            // Include lang property in the payload
             const payload = isButton 
-                ? { selection: text, lang: currentLang } 
-                : { message: text, selects: {}, skip: skip, lang: currentLang };
+                ? { selection: text, lang: currentLang, session_data: sessionData } 
+                : { message: text, selects: {}, skip: skip, lang: currentLang, session_data: sessionData };
             
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -232,8 +275,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             removeTypingIndicator();
 
+            if (data.session_data && Object.keys(data.session_data).length > 0) {
+                localStorage.setItem('pawmatch_session_data', JSON.stringify(data.session_data));
+            } else {
+                localStorage.removeItem('pawmatch_session_data');
+            }
+
             if (data.type === 'result') {
                 skipBtn.style.display = 'none';
+                localStorage.removeItem('pawmatch_session_data'); // Clear session on results
                 addMessage(renderResults(data), 'agent', true);
             } else {
                 let responseHtml = data.response;
@@ -262,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lang toggle click event
     langToggleBtn.addEventListener('click', () => {
         currentLang = currentLang === 'he' ? 'en' : 'he';
+        localStorage.setItem('pawmatch_lang', currentLang);
         updateUIStrings();
     });
 
@@ -275,6 +326,18 @@ document.addEventListener('DOMContentLoaded', () => {
         sendMessage("", true);
     });
 
+    // Start over global handler
+    window.handleStartOver = async function() {
+        localStorage.removeItem('pawmatch_chat_history');
+        localStorage.removeItem('pawmatch_session_data');
+        try {
+            await fetch('/api/reset', { method: 'POST' });
+        } catch (e) {
+            console.error("Error resetting session:", e);
+        }
+        window.location.reload();
+    };
+
     // Initial setup
-    updateUIStrings();
+    loadChatHistory();
 });
