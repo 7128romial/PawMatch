@@ -228,6 +228,16 @@ def chat():
         state = "state_c"
         
     # State Machine Logic
+    if state == "state_e":
+        msg = ("Adopting a dog is a significant and long-term responsibility (10-15 years) and is not recommended solely out of boredom or as a temporary solution. "
+               "A dog is a living soul that needs care, time, and lots of love. If you are ready for this commitment, tell me about your lifestyle and we can begin the match.") if lang == 'en' else \
+              ("אימוץ כלב הוא צעד משמעותי ואחראי לטווח ארוך (10-15 שנים) ולא מומלץ לעשות זאת רק מתוך שעמום או כפתרון זמני. "
+               "כלב הוא נפש חיה שזקוקה לטיפול, זמן והמון אהבה. אם אתם מוכנים להתחייבות הזו, ספרו לי על אורח החיים שלכם ונתחיל בהתאמה.")
+        return jsonify({
+            "response": msg,
+            "session_data": build_session_data()
+        })
+
     if state == "state_a":
         session['state'] = "state_a"
         msg = "I can only help with matching dog breeds. Tell me about your environment and what you are looking for." if lang == 'en' else "אני יודע לעזור רק בהתאמת גזע כלב, ספרי לי על הסביבה שלך ועל מה את מחפשת."
