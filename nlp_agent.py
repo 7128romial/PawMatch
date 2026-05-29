@@ -72,6 +72,16 @@ def analyze_user_input(user_text, current_params=None):
 - d5_tendency_to_bark_or_howl
 - e3_exercise_needs
 
+# שלב 3: הנחיות קריטיות לשלילות והשלכות לוגיות (Negations and Implications)
+אנא שים לב לביטויי שלילה ומשמעויות נגררות של דברי המשתמש:
+1. הבנה נכונה של שלילה (Negations):
+   - "אין ילדים" / "ללא ילדים" / "no kids" -> משמעו שאין ילדים בבית. מפה ל-`b2_incredibly_kid_friendly_dogs: 1` (Adults Only).
+   - "לא ארבע שעות" / "לא הרבה שעות" / "not many hours" -> משמעו שהכלב יהיה לבד מעט מאוד זמן. מפה ל-`a4_tolerates_being_alone: 1`.
+   - "לא דירה" / "לא בית קטן" -> מפה ל-`a1_adapts_well_to_apartment_living: 1` (חצר גדולה).
+2. השלכות והיסקים לוגיים (Implications):
+   - "לא פרווה ארוכה" / "בלי פרווה ארוכה" / "no long hair" -> מפה אורך פרווה קצר `hair_length: "Short"`. בנוסף, השלם מכך שהמשתמש רוצה כלב שאינו משיר שיער, ולכן מפה גם רמת נשירה נמוכה `c1_amount_of_shedding: 1` או `2`.
+   - "ללא נשירה" / "אלרגי לשיער" / "hypoallergenic" -> מפה רמת נשירה נמוכה `c1_amount_of_shedding: 1` וכן אורך פרווה קצר `hair_length: "Short"`.
+
 פורמט הפלט (JSON בלבד):
 {
   "state": "state_b",
