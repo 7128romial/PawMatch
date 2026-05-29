@@ -298,62 +298,83 @@ def button_click():
     return chat()
 
 def process_recommendation(selects, text_params):
-    rec = recommend_dogs(selects, text_params)
-    lang = session.get('lang', 'he')
-    
-    if "error" in rec:
-        err_msg = rec["error"]
-        if lang == 'en' and err_msg == "Dataset not loaded.":
-            err_msg = "Dataset not loaded."
-        session.clear()
+    try:
+        rec = recommend_dogs(selects, text_params)
+        lang = session.get('lang', 'he')
+        
+        if "error" in rec:
+            err_msg = rec["error"]
+            if lang == 'en' and err_msg == "Dataset not loaded.":
+                err_msg = "Dataset not loaded."
+            session.clear()
+            return jsonify({
+                "response": err_msg,
+                "session_data": {}
+            })
+            
+        dogs = rec.get("dogs", [])
+        
+        # Generate warm personalized explanations and breed details using GPT-3.5
+        explanations = []
+        if dogs:
+            try:
+                explanations = generate_explanations(dogs, text_params, lang)
+            except Exception as ex_err:
+                print(f"Error generating explanations: {ex_err}")
+                explanations = []
+            if not isinstance(explanations, list):
+                explanations = []
+            
+        # Merge explanations back into the dog records
+        explanation_map = {e.get("name"): e for e in explanations if isinstance(e, dict)}
+        for dog in dogs:
+            exp = explanation_map.get(dog.get("name"), {})
+            dog["match_reason"] = exp.get("match_reason", "")
+            dog["breed_info"] = exp.get("breed_info", "")
+            
+        is_full_match = len(get_missing_critical(text_params)) == 0
+        top_score = dogs[0].get("match_score") if dogs else 0
+        score_val = top_score if (is_full_match and top_score >= 90) else None
+
+        # Do not clear session entirely, transition to state_q so user can ask questions about the breeds
+        session['state'] = "state_q"
+        session['recommended_dogs'] = [d.get("breed") for d in dogs]
+        
+        response_payload = {
+            "type": "result",
+            "match_type": rec["type"],
+            "dogs": dogs,
+            "score": score_val,
+            "session_data": {
+                "text_params": text_params,
+                "state": "state_q",
+                "no_preference_count": 0,
+                "state_b_count": 0,
+                "recommended_dogs": session['recommended_dogs']
+            }
+        }
+        
+        if "message" in rec:
+            msg = rec["message"]
+            if lang == 'en' and msg == "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל.":
+                msg = "No direct match found. Here are the dogs most similar to your profile."
+            response_payload["message"] = msg
+            
+        return jsonify(response_payload)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        lang = session.get('lang', 'he')
+        err_msg = "Internal server error occurred while processing recommendations." if lang == 'en' else "שגיאת שרת פנימית בעת עיבוד ההמלצות."
         return jsonify({
             "response": err_msg,
-            "session_data": {}
+            "session_data": {
+                "text_params": text_params,
+                "state": "state_c",
+                "no_preference_count": 0,
+                "state_b_count": 0
+            }
         })
-        
-    dogs = rec.get("dogs", [])
-    
-    # Generate warm personalized explanations and breed details using GPT-3.5
-    explanations = []
-    if dogs:
-        explanations = generate_explanations(dogs, text_params, lang)
-        
-    # Merge explanations back into the dog records
-    explanation_map = {e.get("name"): e for e in explanations if isinstance(e, dict)}
-    for dog in dogs:
-        exp = explanation_map.get(dog.get("name"), {})
-        dog["match_reason"] = exp.get("match_reason", "")
-        dog["breed_info"] = exp.get("breed_info", "")
-        
-    is_full_match = len(get_missing_critical(text_params)) == 0
-    top_score = dogs[0].get("match_score") if dogs else 0
-    score_val = top_score if (is_full_match and top_score >= 90) else None
-
-    # Do not clear session entirely, transition to state_q so user can ask questions about the breeds
-    session['state'] = "state_q"
-    session['recommended_dogs'] = [d.get("breed") for d in dogs]
-    
-    response_payload = {
-        "type": "result",
-        "match_type": rec["type"],
-        "dogs": dogs,
-        "score": score_val,
-        "session_data": {
-            "text_params": text_params,
-            "state": "state_q",
-            "no_preference_count": 0,
-            "state_b_count": 0,
-            "recommended_dogs": session['recommended_dogs']
-        }
-    }
-    
-    if "message" in rec:
-        msg = rec["message"]
-        if lang == 'en' and msg == "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל.":
-            msg = "No direct match found. Here are the dogs most similar to your profile."
-        response_payload["message"] = msg
-        
-    return jsonify(response_payload)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

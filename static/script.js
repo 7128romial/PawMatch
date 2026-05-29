@@ -283,7 +283,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.type === 'result') {
                 skipBtn.style.display = 'none';
-                localStorage.removeItem('pawmatch_session_data'); // Clear session on results
                 addMessage(renderResults(data), 'agent', true);
             } else {
                 let responseHtml = data.response;

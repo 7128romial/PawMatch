@@ -105,6 +105,21 @@ def calculate_weighted_score(row, text_params):
         return 0
     return (score / max_score) * 100
 
+def clean_dict(d):
+    clean = {}
+    for k, v in d.items():
+        if isinstance(v, (np.integer, np.int64)):
+            clean[k] = int(v)
+        elif isinstance(v, (np.floating, np.float64)):
+            clean[k] = float(v) if not np.isnan(v) else None
+        elif isinstance(v, np.ndarray):
+            clean[k] = v.tolist()
+        elif pd.isna(v):
+            clean[k] = None
+        else:
+            clean[k] = v
+    return clean
+
 def get_fallback_similar(user_vector, k=3):
     # Scale behavior columns only
     df_behavior = df_numerical_scaled[behavioral_cols]
@@ -141,7 +156,7 @@ def recommend_dogs(selects, text_params):
         for _, d in top_dogs.iterrows():
             d_dict = d.to_dict()
             d_dict['match_score'] = 70
-            dogs_list.append(d_dict)
+            dogs_list.append(clean_dict(d_dict))
         return {"type": "result", "dogs": dogs_list, "message": "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל."}
 
     # If we have less than 3, pad with cosine fallback
@@ -164,7 +179,8 @@ def recommend_dogs(selects, text_params):
                 d_dict['match_score'] = 65
                 padded_rows.append(d_dict)
         if padded_rows:
-            filtered_df = pd.concat([filtered_df, pd.DataFrame(padded_rows)], ignore_index=True)
+            cleaned_padded = [clean_dict(row) for row in padded_rows]
+            filtered_df = pd.concat([filtered_df, pd.DataFrame(cleaned_padded)], ignore_index=True)
 
     # Always take top 3
     top_3 = filtered_df.head(3)
@@ -172,7 +188,7 @@ def recommend_dogs(selects, text_params):
     for _, d in top_3.iterrows():
         d_dict = d.to_dict()
         d_dict['match_score'] = int(round(d['match_score'])) if pd.notna(d['match_score']) else 70
-        dogs_list.append(d_dict)
+        dogs_list.append(clean_dict(d_dict))
         
     return {
         "type": "result",
