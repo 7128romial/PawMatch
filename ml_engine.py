@@ -9,6 +9,11 @@ numerical_cols = ['age_years', 'weight_kg', 'a1_adapts_well_to_apartment_living'
                   'b3_dog_friendly', 'c1_amount_of_shedding', 'c2_drooling_potential', 'd1_easy_to_train', 
                   'd5_tendency_to_bark_or_howl', 'e1_energy_level', 'e3_exercise_needs', 'life_span_min', 'life_span_max']
 
+behavioral_cols = ['a1_adapts_well_to_apartment_living', 'a2_good_for_novice_owners', 'a4_tolerates_being_alone', 
+                   'b1_affectionate_with_family', 'b2_incredibly_kid_friendly_dogs', 'b3_dog_friendly', 
+                   'c1_amount_of_shedding', 'c2_drooling_potential', 'd1_easy_to_train', 
+                   'd5_tendency_to_bark_or_howl', 'e1_energy_level', 'e3_exercise_needs']
+
 df_final = None
 df_numerical_scaled = None
 scaler = MinMaxScaler()
@@ -101,8 +106,9 @@ def calculate_weighted_score(row, text_params):
     return (score / max_score) * 100
 
 def get_fallback_similar(user_vector, k=3):
-    # Cluster pivot and cosine similarity
-    similarities = cosine_similarity([user_vector], df_numerical_scaled.values)[0]
+    # Scale behavior columns only
+    df_behavior = df_numerical_scaled[behavioral_cols]
+    similarities = cosine_similarity([user_vector], df_behavior.values)[0]
     top_indices = np.argsort(similarities)[::-1][:k]
     return df_final.iloc[top_indices]
 
@@ -125,12 +131,11 @@ def recommend_dogs(selects, text_params):
     
     if len(filtered_df) == 0:
         # Cosine similarity fallback if all filters cut out
-        user_vector = np.full(len(numerical_cols), 0.5)
+        user_vector = np.full(len(behavioral_cols), 0.5)
         for p, v in text_params.items():
-            if p in numerical_cols:
-                idx = numerical_cols.index(p)
-                min_v, max_v = scaler.data_min_[idx], scaler.data_max_[idx]
-                user_vector[idx] = (v - min_v) / (max_v - min_v) if max_v > min_v else 0.5
+            if p in behavioral_cols:
+                idx = behavioral_cols.index(p)
+                user_vector[idx] = (v - 1) / 4.0
         top_dogs = get_fallback_similar(user_vector, 3)
         dogs_list = []
         for _, d in top_dogs.iterrows():
@@ -141,12 +146,11 @@ def recommend_dogs(selects, text_params):
 
     # If we have less than 3, pad with cosine fallback
     if len(filtered_df) < 3:
-        user_vector = np.full(len(numerical_cols), 0.5)
+        user_vector = np.full(len(behavioral_cols), 0.5)
         for p, v in text_params.items():
-            if p in numerical_cols:
-                idx = numerical_cols.index(p)
-                min_v, max_v = scaler.data_min_[idx], scaler.data_max_[idx]
-                user_vector[idx] = (v - min_v) / (max_v - min_v) if max_v > min_v else 0.5
+            if p in behavioral_cols:
+                idx = behavioral_cols.index(p)
+                user_vector[idx] = (v - 1) / 4.0
         similar_dogs = get_fallback_similar(user_vector, 10)
         existing_names = set(filtered_df['name'])
         
