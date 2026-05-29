@@ -5,7 +5,7 @@ import json
 # Expecting OPENAI_API_KEY to be set in environment
 client = OpenAI()
 
-def analyze_user_input(user_text, current_params=None):
+def analyze_user_input(user_text, current_params=None, active_param=None):
     if current_params is None:
         current_params = {}
         
@@ -82,6 +82,19 @@ def analyze_user_input(user_text, current_params=None):
    - "לא פרווה ארוכה" / "בלי פרווה ארוכה" / "no long hair" -> מפה אורך פרווה קצר `hair_length: "Short"`. בנוסף, השלם מכך שהמשתמש רוצה כלב שאינו משיר שיער, ולכן מפה גם רמת נשירה נמוכה `c1_amount_of_shedding: 1` או `2`.
    - "ללא נשירה" / "אלרגי לשיער" / "hypoallergenic" -> מפה רמת נשירה נמוכה `c1_amount_of_shedding: 1` וכן אורך פרווה קצר `hair_length: "Short"`.
 
+# שלב 4: התמודדות עם תשובות קצרות וחלקיות (כן/לא/יש/אין) על בסיס הפרמטר הפעיל
+המשתמש נשאל כעת שאלה לגבי הפרמטר הפעיל הבא (active_param): {active_param}
+
+אם תשובת המשתמש הנוכחית היא קצרה או ישירה (למשל: "כן", "לא", "יש", "אין", "לא אין", "בטח", "לאחרונה"):
+1. במידה ו-active_param הוא 'b2_incredibly_kid_friendly_dogs' (השאלה: האם יש ילדים או חיות מחמד בבית?):
+   - "לא" / "אין" / "לא אין" / "no" / "none" -> המשתמש מתכוון שאין ילדים בבית. מפה ל-`b2_incredibly_kid_friendly_dogs: 1`
+   - "כן" / "יש" / "yes" -> המשתמש מתכוון שיש ילדים בבית. מפה ל-`b2_incredibly_kid_friendly_dogs: 5`
+2. במידה ו-active_param הוא 'a2_good_for_novice_owners' (השאלה: מהי רמת הניסיון בגידול כלבים?):
+   - "לא" / "אין" / "לא אין" / "בעל ניסיון" / "raised before" -> המשתמש מתכוון שיש לו ניסיון (לא כלב ראשון). מפה ל-`a2_good_for_novice_owners: 1`
+   - "כן" / "יש" / "פעם ראשונה" / "כלב ראשון" / "first time" -> המשתמש מתכוון שאין לו ניסיון (זה כלב ראשון). מפה ל-`a2_good_for_novice_owners: 5`
+3. במידה ו-active_param הוא 'a4_tolerates_being_alone' (השאלה: כמה שעות הכלב יישאר לבד?):
+   - "לא" / "לא יישאר לבד" / "אף פעם" / "לא הרבה" -> מפה ל-`a4_tolerates_being_alone: 1`
+
 פורמט הפלט (JSON בלבד):
 {
   "state": "state_b",
@@ -93,10 +106,11 @@ def analyze_user_input(user_text, current_params=None):
 """
 
     try:
+        system_prompt_final = system_prompt.replace("{active_param}", str(active_param or "None"))
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": system_prompt_final},
                 {"role": "user", "content": f"היסטוריית נתונים עד כה (JSON): {json.dumps(current_params)}\n\nקלט המשתמש הנוכחי: '{user_text}'"}
             ],
             response_format={ "type": "json_object" },
