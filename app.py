@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, session, send_from_directory
 from dotenv import load_dotenv
 import os
-from nlp_agent import analyze_user_input, generate_explanations
+from nlp_agent import analyze_user_input, generate_explanations, answer_breed_question
 from ml_engine import recommend_dogs
 
 load_dotenv()
@@ -94,6 +94,33 @@ def chat():
     if current_session_state is None:
         current_session_state = session.get('state', 'state_b')
     session['state'] = current_session_state
+    
+    if current_session_state == "state_q":
+        recommended_breeds = client_session.get('recommended_dogs', session.get('recommended_dogs', []))
+        session['recommended_dogs'] = recommended_breeds
+        if not user_message:
+            err_msg = "Please enter text." if lang == 'en' else "אנא הכנס טקסט."
+            return jsonify({
+                "response": err_msg,
+                "session_data": {
+                    "text_params": text_params,
+                    "state": "state_q",
+                    "no_preference_count": no_preference_count,
+                    "state_b_count": state_b_count,
+                    "recommended_dogs": recommended_breeds
+                }
+            })
+        answer = answer_breed_question(user_message, recommended_breeds, lang)
+        return jsonify({
+            "response": answer,
+            "session_data": {
+                "text_params": text_params,
+                "state": "state_q",
+                "no_preference_count": no_preference_count,
+                "state_b_count": state_b_count,
+                "recommended_dogs": recommended_breeds
+            }
+        })
         
     if skip_to_results or session['no_preference_count'] >= 2:
         return process_recommendation(selects, session['text_params'])
@@ -302,14 +329,22 @@ def process_recommendation(selects, text_params):
     top_score = dogs[0].get("match_score") if dogs else 0
     score_val = top_score if (is_full_match and top_score >= 90) else None
 
-    session.clear() # Reset for next
+    # Do not clear session entirely, transition to state_q so user can ask questions about the breeds
+    session['state'] = "state_q"
+    session['recommended_dogs'] = [d.get("breed") for d in dogs]
     
     response_payload = {
         "type": "result",
         "match_type": rec["type"],
         "dogs": dogs,
         "score": score_val,
-        "session_data": {}
+        "session_data": {
+            "text_params": text_params,
+            "state": "state_q",
+            "no_preference_count": 0,
+            "state_b_count": 0,
+            "recommended_dogs": session['recommended_dogs']
+        }
     }
     
     if "message" in rec:

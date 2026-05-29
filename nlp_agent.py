@@ -167,3 +167,35 @@ Recommended dogs data: {json.dumps(dogs_info)}
     except Exception as e:
         print(f"OpenAI API Error in generate_explanations: {e}")
         return []
+
+def answer_breed_question(user_question, recommended_breeds=None, lang='he'):
+    if recommended_breeds is None:
+        recommended_breeds = []
+        
+    breeds_str = ", ".join(recommended_breeds) if recommended_breeds else "none currently recommended"
+    
+    system_prompt = f"""
+    You are a friendly, professional canine breed and care expert for PawMatch.
+    Your goal is to answer user questions about dog breeds, behavior, care, training, or suitability.
+    The user was recently recommended the following breeds: {breeds_str}.
+    
+    Guidelines:
+    1. Answer the question in a warm, helpful, and expert tone.
+    2. Keep your response relatively concise (2-4 sentences).
+    3. If the question is completely unrelated to dogs, breeds, or pets, politely guide the user back to dog-related questions, or tell them they can click "Start Over" to begin a new match search.
+    4. You must respond strictly in: {"Hebrew (עברית)" if lang == 'he' else "English"}.
+    """
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_question}
+            ],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"OpenAI API Error in answer_breed_question: {e}")
+        return "I'm sorry, I encountered an error while answering your question." if lang == 'en' else "מצטער, נתקלתי בשגיאה בעת מענה על השאלה שלך."
