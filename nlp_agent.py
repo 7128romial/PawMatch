@@ -9,11 +9,11 @@ if api_key and api_key != "your_api_key_here":
 else:
     client = None
 
-def analyze_user_input(user_text, current_params=None, active_param=None):
+def analyze_user_input(user_text, current_params=None, active_param=None, lang='he'):
     if current_params is None:
         current_params = {}
         
-    system_prompt = """
+    system_prompt_he = """
 אתה מנתח שפה (NLP Layer) עבור פרויקט "PawMatch" - סוכן חכם להתאמת כלבים לאימוץ.
 תפקידך לנתח את קלט הטקסט החופשי של המשתמש, לשלב אותו עם מידע קיים, ולהחזיר JSON עם הנתונים והמצב (State).
 
@@ -103,8 +103,8 @@ def analyze_user_input(user_text, current_params=None, active_param=None):
 4. סביבת מגורים (a1_adapts_well_to_apartment_living):
    - "לא דירה" / "לא בית קטן" -> מפה ל-`a1_adapts_well_to_apartment_living: 1` (חצר גדולה).
 5. אורך פרווה ונשירה (Implications):
-    - "לא פרווה ארוכה" / "בלי פרווה ארוכה" / "no long hair" -> מפה אורך פרווה קצר `hair_length: "Short"`. בנוסף, השלם מכך שהמשתמש רוצה כלב שאינו משיר שיער, ולכן מפה גם רמת נשירה נמוכה `c1_amount_of_shedding: 1` או `2`.
-    - "ללא נשירה" / "אלרגי לשיער" / "hypoallergenic" -> מפה רמת נשירה נמוכה `c1_amount_of_shedding: 1` וכן אורך פרווה קצר `hair_length: "Short"`.
+     - "לא פרווה ארוכה" / "בלי פרווה ארוכה" / "no long hair" -> מפה אורך פרווה קצר `hair_length: "Short"`. בנוסף, השלם מכך שהמשתמש רוצה כלב שאינו משיר שיער, ולכן מפה גם רמת נשירה נמוכה `c1_amount_of_shedding: 1` או `2`.
+     - "ללא נשירה" / "אלרגי לשיער" / "hypoallergenic" -> מפה רמת נשירה נמוכה `c1_amount_of_shedding: 1` וכן אורך פרווה קצר `hair_length: "Short"`.
 6. רגישות לרעש ונביחות (d5_tendency_to_bark_or_howl):
    - "כלב שקט", "רגיש לרעש", "בלי נביחות", "לא רוצה שינבח", "שלא ינבח", "שקט", "quiet dog", "noise sensitive" -> מפה ל-`d5_tendency_to_bark_or_howl: 1`.
    - "כלב שמירה", "שינבח כשמישהו בא", "שמירה", "guard dog" -> מפה ל-`d5_tendency_to_bark_or_howl: 5`.
@@ -116,7 +116,7 @@ def analyze_user_input(user_text, current_params=None, active_param=None):
 9. רגישות לריור (c2_drooling_potential):
    - "שלא ירייר", "בלי ריר", "נקי", "no drool" -> מפה ל-`c2_drooling_potential: 1`.
 10. רצון בכלב "דבק" ומפנק (b1_affectionate_with_family):
-    - "כלב מחבק", "כלב דבק", "כלב מפנק", "להתכרבל", "cuddly dog" -> מפה ל-`b1_affectionate_with_family: 5`.
+     - "כלב מחבק", "כלב דבק", "כלב מפנק", "להתכרבל", "cuddly dog" -> מפה ל-`b1_affectionate_with_family: 5`.
 
 # שלב 4: התמודדות עם תשובות קצרות וחלקיות (כן/לא/יש/אין) על בסיס הפרמטר הפעיל
 המשתמש נשאל כעת שאלה לגבי הפרמטר הפעיל הבא (active_param): {active_param}
@@ -132,15 +132,142 @@ def analyze_user_input(user_text, current_params=None, active_param=None):
 }
 """
 
+    system_prompt_en = """
+You are a language analyzer (NLP Layer) for the "PawMatch" project - a smart agent for matching dogs for adoption.
+Your job is to analyze the user's free-text input, combine it with existing data, and return a JSON containing the extracted parameters and the conversation state.
+
+# STEP 1: Identify State
+Classify the current conversation state into one of 5 states, taking into account the data history and the current input:
+- state_e (unethical / irresponsible motive): The user expresses an irresponsible or unethical motive for adopting a dog (e.g., adopting purely out of boredom, wanting a temporary toy, treating the dog as a decorative object, a passing whim, or a clear lack of readiness to care for a living soul).
+- state_a (irrelevant): The user is talking about a topic unrelated to dogs, adoption, or pets (e.g., politics, cooking recipes).
+- state_b (lacking essential information): The user has provided fewer than 2 critical features out of the four (i.e., 0 or 1).
+- state_c (partial information - good): The user has provided 2 or 3 critical features out of the four, but not all of them.
+- state_d (full information): The user has provided all 4 critical features (or at least 3 critical features plus important/additional features).
+
+# STEP 2: Extract Data
+Extract values for the following features from the user's text. Note: The user's input may be in Hebrew or English, and could be a combination of free-text messages or button clicks in either language.
+If the user did not refer to a feature, do not return it.
+
+Critical features and mapping guidelines (specifically for quick-choice buttons in Hebrew or English):
+1. a1_adapts_well_to_apartment_living (living environment):
+   - "Small Apartment" / "דירה קטנה" / apartment without a yard / "apartment" -> 5
+   - "Medium Apartment" / "דירה בינונית" / apartment with a balcony -> 4
+   - "House with Yard" / "בית עם חצר" / small yard / "house" -> 2
+   - large yard / "big yard" -> 1
+2. a4_tolerates_being_alone (hours alone per day):
+   - "Full Day" / "יום שלם" / many hours alone / over 8 hours -> 5
+   - "Half Day" / "חצי יום" / 4-6 hours -> 3
+   - "Very Few" / "מעט מאוד" / work from home / barely alone / "work from home" -> 1
+3. b2_incredibly_kid_friendly_dogs (friendliness to children/pets):
+   - "Yes, Young Kids" / "כן, ילדים קטנים" / babies / "kids" -> 5
+   - "Older Kids" / "ילדים גדולים" / kids over 6 years old -> 4
+   - "Adults Only" / "רק מבוגרים" / no kids -> 1
+4. a2_good_for_novice_owners (owner's experience level):
+   - "First Time" / "First Dog" / "כלב ראשון" / "פעם ראשונה" / no experience / "no experience" -> 5
+   - "Raised Before" / "גידלתי בעבר" / experienced / "have experience" -> 1
+
+Physical attributes (it is critical to return exactly the following string values in English):
+5. sex (gender):
+   - "Male" / "זכר" -> "Male"
+   - "Female" / "נקבה" -> "Female"
+6. size (size):
+   - "Small" / "קטן" -> "Small"
+   - "Medium" / "בינוני" -> "Medium"
+   - "Large" / "גדול" -> "Large"
+7. hair_length (coat length):
+   - "Short" / "קצרה" / "קצר" -> "Short"
+   - "Long" / "ארוכה" / "ארוך" -> "Long"
+8. color (coat color):
+   - "Black" / "שחור" -> "Black"
+   - "White" / "לבן" -> "White"
+   - "Brown" / "Tan" / "חום" -> "Tan"
+   - "Gray" / "אפור" -> "Gray"
+   - "Mixed" / "Bicolor" / "מעורב" -> "Bicolor"
+9. breed_preference (specific preferred breed in English):
+   - "Golden" / "Golden Retriever" / "גולדן" / "גולדן רטריבר" -> "Golden Retriever"
+   - "Labrador" / "Labrador Retriever" / "לברדור" / "לברדור רטריבר" -> "Labrador Retriever"
+   - "French Bulldog" / "בולדוג צרפתי" -> "French Bulldog"
+   - "Pug" / "פאג" -> "Pug"
+   - "Rottweiler" / "רוטוויילר" -> "Rottweiler"
+   - "Yorkshire Terrier" / "יורקי" / "יורקשייר" -> "Yorkshire Terrier"
+   - "German Shepherd" / "German Shepherd Dog" / "רועה גרמני" -> "German Shepherd Dog"
+   - "Siberian Husky" / "האסקי" / "האסקי סיבירי" -> "Siberian Husky"
+   - "Poodle" / "פודל" -> "Poodle"
+   - "Mixed Breed" / "מעורב" -> "Mixed Breed"
+   - If the user wants another specific breed, map it to its official English name. If they did not ask for a specific breed, do not return this value.
+
+Important features:
+- e1_energy_level (desired energy level)
+- d1_easy_to_train (how easy to train / purpose of the dog)
+
+Additional features:
+- b1_affectionate_with_family
+- b3_dog_friendly
+- c1_amount_of_shedding (shedding / allergy. 1=no shedding/hypoallergenic, 5=sheds a lot)
+- c2_drooling_potential
+- d5_tendency_to_bark_or_howl
+- e3_exercise_needs
+
+# STEP 3: Critical Instructions for Negations and Logical Implications
+Please pay close attention to negations and implied meanings in the user's input:
+1. Children and Pets (b2_incredibly_kid_friendly_dogs):
+   - If the user specifies there are no children or pets in the house, or that they don't have kids (e.g., "no kids", "no children", "without kids", "no pets", "none", "no", "not having kids"): map to `b2_incredibly_kid_friendly_dogs: 1` (Adults Only).
+   - If the user specifies there are kids in the house (e.g., "have kids", "there are kids", "yes", "kids"): map to `b2_incredibly_kid_friendly_dogs: 5`.
+2. Experience Level (a2_good_for_novice_owners):
+   - If the user specifies they have no experience, or haven't raised a dog before, or that it is their first dog (e.g., "first dog", "first time", "no experience", "haven't raised a dog", "none", "no"): map to `a2_good_for_novice_owners: 5` (meaning, good for novice owners).
+   - If the user specifies they have experience or raised before (e.g., "raised before", "had dogs", "experienced", "have experience", "yes"): map to `a2_good_for_novice_owners: 1`.
+3. Hours alone at home (a4_tolerates_being_alone):
+   - If the user specifies the dog won't be left alone at all or barely (e.g., "won't be left alone", "never alone", "work from home", "not much", "no", "never", "always home"): map to `a4_tolerates_being_alone: 1`.
+   - "not four hours" / "not many hours" -> map to `a4_tolerates_being_alone: 1`.
+4. Living Environment (a1_adapts_well_to_apartment_living):
+   - "not an apartment" / "not a small house" -> map to `a1_adapts_well_to_apartment_living: 1` (large yard).
+5. Coat Length and Shedding (Implications):
+   - "no long hair" / "without long hair" / "no long coat" -> map coat length to short `hair_length: "Short"`. In addition, infer that the user wants a dog that doesn't shed much, and thus map low shedding level `c1_amount_of_shedding: 1` or `2`.
+   - "no shedding" / "allergic to hair" / "hypoallergenic" -> map low shedding level `c1_amount_of_shedding: 1` and short coat length `hair_length: "Short"`.
+6. Noise and Barking Sensitivity (d5_tendency_to_bark_or_howl):
+   - "quiet dog", "sensitive to noise", "no barking", "don't want barking", "should not bark", "quiet", "noise sensitive" -> map to `d5_tendency_to_bark_or_howl: 1`.
+   - "guard dog", "bark when someone comes", "guard" -> map to `d5_tendency_to_bark_or_howl: 5`.
+7. Energy level and exercise needs (e1_energy_level, e3_exercise_needs):
+   - "I run", "love to run", "very active", "sporty", "long outdoor walks", "active", "runner" -> map `e1_energy_level: 5` and `e3_exercise_needs: 5`.
+   - "couch potato", "lazy dog", "short walks", "lazy" -> map `e1_energy_level: 1` and `e3_exercise_needs: 1`.
+8. Friendliness to other dogs at home (b3_dog_friendly):
+   - "have a dog", "live with other dogs", "friendly to other dogs", "other dogs" -> map to `b3_dog_friendly: 5`.
+9. Sensitivity to drool (c2_drooling_potential):
+   - "no drool", "clean", "without drooling" -> map to `c2_drooling_potential: 1`.
+10. Desire for a cuddly/velcro dog (b1_affectionate_with_family):
+    - "cuddly dog", "velcro dog", "affectionate", "cuddle" -> map to `b1_affectionate_with_family: 5`.
+
+# STEP 4: Handling short and partial answers (yes/no/have/don't have) based on the active parameter
+The user is currently being asked a question regarding the following active parameter (active_param): {active_param}
+If the user's current input is short or direct (e.g., "yes", "no", "have", "none", "don't have", "not really") and answers the question regarding {active_param}, please use the rules in STEP 3 and the meaning of {active_param} to determine the correct value.
+
+Output Format (strictly JSON only):
+{
+  "state": "state_b",
+  "extracted_parameters": {
+    "a1_adapts_well_to_apartment_living": 5,
+    "sex": "Male"
+  }
+}
+"""
+
+    system_prompt = system_prompt_he if lang == 'he' else system_prompt_en
+
     try:
         if client is None:
             raise Exception("OpenAI API key is missing or placeholder.")
         system_prompt_final = system_prompt.replace("{active_param}", str(active_param or "None"))
+        
+        if lang == 'he':
+            user_prompt = f"היסטוריית נתונים עד כה (JSON): {json.dumps(current_params)}\n\nקלט המשתמש הנוכחי: '{user_text}'"
+        else:
+            user_prompt = f"Data history so far (JSON): {json.dumps(current_params)}\n\nCurrent user input: '{user_text}'"
+            
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt_final},
-                {"role": "user", "content": f"היסטוריית נתונים עד כה (JSON): {json.dumps(current_params)}\n\nקלט המשתמש הנוכחי: '{user_text}'"}
+                {"role": "user", "content": user_prompt}
             ],
             response_format={ "type": "json_object" },
             temperature=0.0

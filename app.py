@@ -201,7 +201,7 @@ def chat():
     else:
         # Analyze input normally via LLM
         active_param = missing_before[0] if missing_before else None
-        nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param)
+        nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang)
     
     if nlp_result.get("state") == "error":
         err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
