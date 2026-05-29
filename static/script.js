@@ -111,9 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.agent-info h2').textContent = trans.agentName;
         document.querySelector('.status-text').textContent = trans.statusText;
         
-        // Skip and Lang Toggle Buttons
+        // Skip, Reset and Lang Toggle Buttons
         skipBtn.innerHTML = trans.skipBtn;
         langToggleBtn.innerHTML = trans.langBtnText;
+        const resetBtn = document.getElementById('reset-btn');
+        if (resetBtn) {
+            resetBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> ${trans.startOver}`;
+        }
         
         // Input Area
         userInput.placeholder = trans.placeholder;
@@ -314,6 +318,11 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('pawmatch_lang', currentLang);
         updateUIStrings();
     });
+
+    const resetBtnElement = document.getElementById('reset-btn');
+    if (resetBtnElement) {
+        resetBtnElement.addEventListener('click', () => window.handleStartOver());
+    }
 
     sendBtn.addEventListener('click', () => sendMessage(userInput.value.trim()));
     userInput.addEventListener('keypress', (e) => {

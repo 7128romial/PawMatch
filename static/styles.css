@@ -172,6 +172,25 @@ body {
     color: white;
 }
 
+.reset-btn {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid var(--danger);
+    color: var(--text-primary);
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+.reset-btn:hover {
+    background: var(--danger);
+    color: white;
+}
+
 
 
 .chat-messages {
