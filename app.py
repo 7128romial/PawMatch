@@ -388,8 +388,8 @@ def button_click():
 
 def process_recommendation(selects, text_params):
     try:
-        rec = recommend_dogs(selects, text_params)
         lang = session.get('lang', 'he')
+        rec = recommend_dogs(selects, text_params, lang=lang)
         
         if "error" in rec:
             err_msg = rec["error"]

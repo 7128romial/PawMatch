@@ -38,7 +38,13 @@ def apply_hard_filters(dogs_df, selects, text_params):
     size = selects.get('size') or text_params.get('size')
     hair_length = selects.get('hair_length') or text_params.get('hair_length')
     
-    # 1. Physical preferences filtering
+    # 1. Physical / Breed preferences filtering
+    breed_preference = text_params.get('breed_preference')
+    if breed_preference:
+        temp = filtered[filtered['breed'] == breed_preference]
+        if len(temp) > 0:
+            filtered = temp
+
     if color:
         temp = filtered[filtered['color'] == color]
         if len(temp) > 0: filtered = temp
@@ -120,20 +126,29 @@ def clean_dict(d):
             clean[k] = v
     return clean
 
-def get_fallback_similar(user_vector, k=3):
-    # Scale behavior columns only
-    df_behavior = df_numerical_scaled[behavioral_cols]
+def get_fallback_similar(user_vector, target_df=None, k=3):
+    if target_df is None:
+        target_df = df_final
+    # Scale behavior columns only for the selected sub-dataframe indices
+    df_behavior = df_numerical_scaled.loc[target_df.index, behavioral_cols]
     similarities = cosine_similarity([user_vector], df_behavior.values)[0]
     top_indices = np.argsort(similarities)[::-1][:k]
-    return df_final.iloc[top_indices]
+    return target_df.iloc[top_indices]
 
-def recommend_dogs(selects, text_params):
+def recommend_dogs(selects, text_params, lang='he'):
     if df_final is None:
         load_data()
         
     if df_final is None or len(df_final) == 0:
         return {"error": "Dataset not loaded."}
         
+    # Check if a specific breed was requested but is not in our database
+    breed_preference = text_params.get('breed_preference')
+    breed_not_found = False
+    if breed_preference:
+        if len(df_final[df_final['breed'] == breed_preference]) == 0:
+            breed_not_found = True
+            
     filtered_df = apply_hard_filters(df_final, selects, text_params)
     
     # Calculate weighted scores
@@ -144,29 +159,42 @@ def recommend_dogs(selects, text_params):
     filtered_df['match_score'] = scores
     filtered_df = filtered_df.sort_values('match_score', ascending=False)
     
+    # If the user specified a breed and we have that breed, fall back within that breed.
+    # Otherwise, fall back on the entire database.
+    fallback_target_df = df_final
+    if breed_preference and not breed_not_found:
+        fallback_target_df = df_final[df_final['breed'] == breed_preference]
+        
     if len(filtered_df) == 0:
-        # Cosine similarity fallback if all filters cut out
+        # Cosine similarity fallback
         user_vector = np.full(len(behavioral_cols), 0.5)
         for p, v in text_params.items():
             if p in behavioral_cols:
                 idx = behavioral_cols.index(p)
                 user_vector[idx] = (v - 1) / 4.0
-        top_dogs = get_fallback_similar(user_vector, 3)
+        top_dogs = get_fallback_similar(user_vector, fallback_target_df, 3)
         dogs_list = []
         for _, d in top_dogs.iterrows():
             d_dict = d.to_dict()
             d_dict['match_score'] = 70
             dogs_list.append(clean_dict(d_dict))
-        return {"type": "result", "dogs": dogs_list, "message": "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל."}
+            
+        msg = "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל."
+        if breed_not_found:
+            msg = f"לא מצאנו כלבי {breed_preference} כרגע במאגר לאימוץ, אך הנה הכלבים הדומים ביותר שיכולים להתאים לכם." if lang == 'he' else f"We couldn't find any {breed_preference} dogs available for adoption right now, but here are the most similar dogs matching your profile."
+        elif breed_preference:
+            msg = f"לא נמצאה התאמה מושלמת עבור {breed_preference}, אך הנה הכלבים הדומים ביותר מהגזע הזה." if lang == 'he' else f"No perfect match found for {breed_preference}, but here are the most similar dogs of this breed."
+            
+        return {"type": "result", "dogs": dogs_list, "message": msg}
 
-    # If we have less than 3, pad with cosine fallback
+    # If we have less than 3, pad with cosine fallback from the fallback target
     if len(filtered_df) < 3:
         user_vector = np.full(len(behavioral_cols), 0.5)
         for p, v in text_params.items():
             if p in behavioral_cols:
                 idx = behavioral_cols.index(p)
                 user_vector[idx] = (v - 1) / 4.0
-        similar_dogs = get_fallback_similar(user_vector, 10)
+        similar_dogs = get_fallback_similar(user_vector, fallback_target_df, 10)
         existing_names = set(filtered_df['name'])
         
         # Standardize matching columns
@@ -190,7 +218,8 @@ def recommend_dogs(selects, text_params):
         d_dict['match_score'] = int(round(d['match_score'])) if pd.notna(d['match_score']) else 70
         dogs_list.append(clean_dict(d_dict))
         
-    return {
-        "type": "result",
-        "dogs": dogs_list
-    }
+    msg = None
+    if breed_not_found:
+        msg = f"לא מצאנו כלבי {breed_preference} כרגע במאגר לאימוץ, אך הנה הכלבים הדומים ביותר שיכולים להתאים לכם." if lang == 'he' else f"We couldn't find any {breed_preference} dogs available for adoption right now, but here are the most similar dogs matching your profile."
+        
+    return {"type": "result", "dogs": dogs_list, "message": msg}

@@ -64,6 +64,18 @@ def analyze_user_input(user_text, current_params=None, active_param=None):
    - "חום" / "Brown" / "Tan" -> "Tan"
    - "אפור" / "Gray" -> "Gray"
    - "מעורב" / "Mixed" / "Bicolor" -> "Bicolor"
+9. breed_preference (גזע מועדף ספציפי באנגלית):
+   - "גולדן" / "גולדן רטריבר" / "Golden" / "Golden Retriever" -> "Golden Retriever"
+   - "לברדור" / "לברדור רטריבר" / "Labrador" / "Labrador Retriever" -> "Labrador Retriever"
+   - "בולדוג צרפתי" / "French Bulldog" -> "French Bulldog"
+   - "פאג" / "Pug" -> "Pug"
+   - "רוטוויילר" / "Rottweiler" -> "Rottweiler"
+   - "יורקי" / "יורקשייר" / "Yorkshire Terrier" -> "Yorkshire Terrier"
+   - "רועה גרמני" / "German Shepherd" / "German Shepherd Dog" -> "German Shepherd Dog"
+   - "האסקי" / "האסקי סיבירי" / "Siberian Husky" -> "Siberian Husky"
+   - "פודל" / "Poodle" -> "Poodle"
+   - "מעורב" / "Mixed Breed" -> "Mixed Breed"
+   - אם המשתמש רוצה גזע ספציפי אחר, מפה אותו לשמו הרשמי באנגלית. אם לא ביקש גזע ספציפי, אל תחזיר ערך זה.
 
 תכונות חשובות:
 - e1_energy_level (רמת אנרגיה רצויה)
