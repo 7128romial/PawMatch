@@ -7,13 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let isWaitingForResults = false;
 
     function getSelects() {
-        return {
-            color: document.getElementById('filter-color').value,
-            sex: document.getElementById('filter-sex').value,
-            size: document.getElementById('filter-size').value,
-            hair_length: document.getElementById('filter-hair').value
-        };
+        return {};
     }
+
 
     function scrollToBottom() {
         chatMessages.scrollTop = chatMessages.scrollHeight;

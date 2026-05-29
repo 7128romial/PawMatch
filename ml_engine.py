@@ -28,21 +28,26 @@ def load_data():
 def apply_hard_filters(dogs_df, selects, text_params):
     filtered = dogs_df.copy()
     
-    # 1. Selects Filtering
-    if selects.get('color'):
-        temp = filtered[filtered['color'] == selects['color']]
+    color = selects.get('color') or text_params.get('color')
+    sex = selects.get('sex') or text_params.get('sex')
+    size = selects.get('size') or text_params.get('size')
+    hair_length = selects.get('hair_length') or text_params.get('hair_length')
+    
+    # 1. Physical preferences filtering
+    if color:
+        temp = filtered[filtered['color'] == color]
         if len(temp) > 0: filtered = temp
             
-    if selects.get('sex'):
-        temp = filtered[filtered['sex'] == selects['sex']]
+    if sex:
+        temp = filtered[filtered['sex'] == sex]
         if len(temp) > 0: filtered = temp
             
-    if selects.get('size'):
-        temp = filtered[filtered['size'] == selects['size']]
+    if size:
+        temp = filtered[filtered['size'] == size]
         if len(temp) > 0: filtered = temp
             
-    if selects.get('hair_length') and 'hair_length' in filtered.columns:
-        temp = filtered[filtered['hair_length'] == selects['hair_length']]
+    if hair_length and 'hair_length' in filtered.columns:
+        temp = filtered[filtered['hair_length'] == hair_length]
         if len(temp) > 0: filtered = temp
 
     # 2. Text Critical Filtering

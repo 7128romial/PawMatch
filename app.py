@@ -89,7 +89,11 @@ def get_missing_critical(params):
         'a1_adapts_well_to_apartment_living',
         'a4_tolerates_being_alone',
         'b2_incredibly_kid_friendly_dogs',
-        'a2_good_for_novice_owners'
+        'a2_good_for_novice_owners',
+        'sex',
+        'size',
+        'hair_length',
+        'color'
     ]
     return [c for c in criticals if c not in params]
 
@@ -98,7 +102,11 @@ def generate_question(param_key):
         'a1_adapts_well_to_apartment_living': ("איפה הכלב יגור?", ["דירה קטנה", "דירה בינונית", "בית עם חצר", "אין לי העדפה"]),
         'a4_tolerates_being_alone': ("כמה שעות הכלב יהיה לבד ביום?", ["מעט מאוד", "חצי יום", "יום שלם", "אין לי העדפה"]),
         'b2_incredibly_kid_friendly_dogs': ("האם יש ילדים או חיות בבית?", ["כן, ילדים קטנים", "ילדים גדולים", "רק מבוגרים", "אין לי העדפה"]),
-        'a2_good_for_novice_owners': ("מה רמת הניסיון שלך עם כלבים?", ["גידלתי בעבר", "פעם ראשונה", "אין לי העדפה"])
+        'a2_good_for_novice_owners': ("מה רמת הניסיון שלך עם כלבים?", ["גידלתי בעבר", "פעם ראשונה", "אין לי העדפה"]),
+        'sex': ("איזה מין כלב את מעדיפה?", ["זכר", "נקבה", "אין לי העדפה"]),
+        'size': ("איזה גודל כלב מתאים לך יותר?", ["קטן", "בינוני", "גדול", "אין לי העדפה"]),
+        'hair_length': ("איזה אורך פרווה את מעדיפה?", ["קצרה", "ארוכה", "אין לי העדפה"]),
+        'color': ("איזה צבע פרווה את מעדיפה?", ["שחור", "לבן", "חום", "אפור", "מעורב", "אין לי העדפה"])
     }
     return questions.get(param_key, ("חסר לי קצת מידע, להמשיך לתוצאות?", ["כן", "אין לי העדפה"]))
 

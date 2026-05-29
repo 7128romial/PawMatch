@@ -21,7 +21,7 @@ def analyze_user_input(user_text, current_params=None):
 - state_d (מידע מלא): המשתמש סיפק את כל 4 התכונות הקריטיות (או לפחות 3 תכונות קריטיות בתוספת תכונות חשובות/נוספות).
 
 # שלב 2: חילוץ נתונים
-חלץ ערכים (1-5 או ערך מספרי לגיל/משקל) עבור התכונות הבאות מתוך הטקסט של המשתמש.
+חלץ ערכים עבור התכונות הבאות מתוך הטקסט של המשתמש.
 אם המשתמש לא התייחס לתכונה, אל תחזיר אותה.
 
 תכונות קריטיות והנחיות מיפוי (בפרט עבור כפתורי בחירה מהירה):
@@ -42,6 +42,24 @@ def analyze_user_input(user_text, current_params=None):
    - "פעם ראשונה" / ללא ניסיון -> 5
    - "גידלתי בעבר" / בעל ניסיון -> 1
 
+מאפיינים פיזיים (קריטי להחזיר בדיוק את ערכי ה-string הבאים באנגלית):
+5. sex (מין):
+   - "זכר" -> "Male"
+   - "נקבה" -> "Female"
+6. size (גודל):
+   - "קטן" -> "Small"
+   - "בינוני" -> "Medium"
+   - "גדול" -> "Large"
+7. hair_length (אורך פרווה):
+   - "קצרה" / "קצר" -> "Short"
+   - "ארוכה" / "ארוך" -> "Long"
+8. color (צבע פרווה):
+   - "שחור" -> "Black"
+   - "לבן" -> "White"
+   - "חום" -> "Tan"
+   - "אפור" -> "Gray"
+   - "מעורב" -> "Bicolor"
+
 תכונות חשובות:
 - e1_energy_level (רמת אנרגיה רצויה)
 - d1_easy_to_train (עד כמה קל לאילוף/מטרת הכלב)
@@ -58,7 +76,8 @@ def analyze_user_input(user_text, current_params=None):
 {
   "state": "state_b",
   "extracted_parameters": {
-    "a1_adapts_well_to_apartment_living": 5
+    "a1_adapts_well_to_apartment_living": 5,
+    "sex": "Male"
   }
 }
 """
