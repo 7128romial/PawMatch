@@ -17,9 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
             associationsTitle: '<i class="fa-solid fa-hand-holding-heart"></i> עמותות שותפות',
             agentName: 'הסוכן החכם של PawMatch',
             statusText: 'מחובר',
-            skipBtn: '<i class="fa-solid fa-forward"></i> הצג תוצאות עכשיו',
+            skipBtn: '<i class="fa-solid fa-forward"></i> <span class="btn-text">הצג תוצאות עכשיו</span>',
             placeholder: 'לדוגמה: אני גרה בדירה, רוב היום בעבודה...',
-            langBtnText: '<i class="fa-solid fa-globe"></i> English',
+            langBtnText: '<i class="fa-solid fa-globe"></i> <span class="btn-text">English</span>',
             welcome: 'שלום! אני הסוכן החכם של PawMatch. ספרו לי בטקסט חופשי על אורח החיים שלכם (סביבת מגורים, שעות לבד בבית, ילדים וכו\' וכו\') ואיזה כלב אתם מחפשים.',
             
             // Results Hebrew
@@ -45,9 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
             associationsTitle: '<i class="fa-solid fa-hand-holding-heart"></i> Partner Associations',
             agentName: 'PawMatch Smart Agent',
             statusText: 'Connected',
-            skipBtn: '<i class="fa-solid fa-forward"></i> Show Results Now',
+            skipBtn: '<i class="fa-solid fa-forward"></i> <span class="btn-text">Show Results Now</span>',
             placeholder: 'For example: I live in an apartment, most of the day at work...',
-            langBtnText: '<i class="fa-solid fa-globe"></i> עברית',
+            langBtnText: '<i class="fa-solid fa-globe"></i> <span class="btn-text">עברית</span>',
             welcome: 'Hello! I am the PawMatch Smart Agent. Tell me in free text about your lifestyle (living environment, hours alone at home, kids, etc.) and what kind of dog you are looking for.',
             
             // Results English
@@ -107,6 +107,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <p>${trans.disclaimerP1}</p>
             <p>${trans.disclaimerP2}</p>
         `;
+        const banner = document.getElementById('chat-disclaimer-banner');
+        if (banner) {
+            const isHeb = currentLang === 'he';
+            banner.querySelector('.banner-content').innerHTML = `
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <p><strong>${isHeb ? 'הצהרה אתית:' : 'Ethical Disclaimer:'}</strong> ${isHeb ? 'המלצות האג\'נט הן הצעה ראשונית בלבד. כלב הוא נפש חיה, וביקור פיזי במקלט הוא תנאי הכרחי ומחייב לפני אימוץ.' : 'The agent\'s recommendations are only a preliminary suggestion. A dog is a living soul, and a physical visit to the shelter is essential.'}</p>
+            `;
+        }
         document.querySelector('.associations h4').innerHTML = trans.associationsTitle;
         document.querySelector('.agent-info h2').textContent = trans.agentName;
         document.querySelector('.status-text').textContent = trans.statusText;
@@ -116,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         langToggleBtn.innerHTML = trans.langBtnText;
         const resetBtn = document.getElementById('reset-btn');
         if (resetBtn) {
-            resetBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> ${trans.startOver}`;
+            resetBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> <span class="btn-text">${trans.startOver}</span>`;
         }
         
         // Input Area
@@ -218,8 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 
             return `
                 <div class="dog-card premium-card">
-                    <div class="score-badge-card">${dog.match_score ? dog.match_score + '%' : trans.alternative}</div>
-                    <h4>${dog.name || 'Dog'} (${dog.breed})</h4>
+                    <div class="dog-card-header">
+                        <h4>${dog.name || 'Dog'} (${dog.breed})</h4>
+                        <div class="score-badge-card">${dog.match_score ? dog.match_score + '%' : trans.alternative}</div>
+                    </div>
                     <div class="dog-specs">
                         <span><i class="fa-solid fa-cake-candles"></i> ${trans.ageLabel}: ${dog.age_years} ${trans.years}</span>
                         <span><i class="fa-solid fa-weight-scale"></i> ${trans.weightLabel}: ${dog.weight_kg} ${trans.kg}</span>

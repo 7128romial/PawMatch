@@ -3,7 +3,11 @@ from openai import OpenAI
 import json
 
 # Expecting OPENAI_API_KEY to be set in environment
-client = OpenAI()
+api_key = os.getenv("OPENAI_API_KEY")
+if api_key and api_key != "your_api_key_here":
+    client = OpenAI(api_key=api_key)
+else:
+    client = None
 
 def analyze_user_input(user_text, current_params=None, active_param=None):
     if current_params is None:
@@ -104,6 +108,8 @@ def analyze_user_input(user_text, current_params=None, active_param=None):
 """
 
     try:
+        if client is None:
+            raise Exception("OpenAI API key is missing or placeholder.")
         system_prompt_final = system_prompt.replace("{active_param}", str(active_param or "None"))
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -165,6 +171,8 @@ Recommended dogs data: {json.dumps(dogs_info)}
 """
 
     try:
+        if client is None:
+            raise Exception("OpenAI API key is missing or placeholder.")
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -199,6 +207,8 @@ def answer_breed_question(user_question, recommended_breeds=None, lang='he'):
     """
     
     try:
+        if client is None:
+            raise Exception("OpenAI API key is missing or placeholder.")
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[

@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify, session, send_from_directory
 from dotenv import load_dotenv
 import os
-from nlp_agent import analyze_user_input, generate_explanations, answer_breed_question
-from ml_engine import recommend_dogs
 
 load_dotenv()
+
+from nlp_agent import analyze_user_input, generate_explanations, answer_breed_question
+from ml_engine import recommend_dogs
 
 app = Flask(__name__)
 # Use a stable secret key to keep session valid across restarts and gunicorn workers

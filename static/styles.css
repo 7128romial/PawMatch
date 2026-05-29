@@ -56,6 +56,11 @@ body {
     gap: 2rem;
 }
 
+html[dir="ltr"] .sidebar {
+    border-left: none;
+    border-right: 1px solid var(--glass-border);
+}
+
 .logo {
     display: flex;
     align-items: center;
@@ -193,6 +198,55 @@ body {
 
 
 
+.chat-disclaimer-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(239, 68, 68, 0.08);
+    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.8rem 2rem;
+    gap: 1.5rem;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.chat-disclaimer-banner .banner-content {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    line-height: 1.4;
+}
+
+.chat-disclaimer-banner .banner-content i {
+    color: var(--danger);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.chat-disclaimer-banner .banner-content p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.chat-disclaimer-banner .banner-content p strong {
+    color: var(--danger);
+}
+
+.close-banner-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.5rem;
+    transition: color 0.2s;
+}
+
+.close-banner-btn:hover {
+    color: var(--danger);
+}
+
 .chat-messages {
     flex: 1; padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; scroll-behavior: smooth;
 }
@@ -259,10 +313,15 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+.dog-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
 .score-badge-card {
-    position: absolute;
-    top: 1.5rem;
-    left: 1.5rem;
     background: linear-gradient(135deg, var(--success), #10b981);
     color: white;
     padding: 0.4rem 0.9rem;
@@ -270,18 +329,14 @@ body {
     font-weight: 800;
     font-size: 0.95rem;
     box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
-}
-
-/* LTR layout alignment adjustments */
-html[dir="ltr"] .score-badge-card {
-    left: auto;
-    right: 1.5rem;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .dog-card.premium-card h4 {
     font-size: 1.4rem;
     color: var(--accent);
-    margin-bottom: 0.2rem;
+    margin: 0;
     font-family: 'Outfit', sans-serif;
     font-weight: 700;
 }
@@ -349,3 +404,151 @@ input[type="text"]:focus { border-color: var(--accent); background: rgba(255, 25
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+/* Mobile Responsiveness Media Queries */
+@media (max-width: 768px) {
+    body {
+        padding: 0;
+        align-items: stretch;
+    }
+
+    .app-container {
+        flex-direction: column;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
+        border: none;
+    }
+    
+    .sidebar {
+        width: 100%;
+        border-left: none;
+        border-bottom: 1px solid var(--glass-border);
+        padding: 1rem;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .logo h1 {
+        font-size: 1.4rem;
+    }
+    
+    .disclaimer-card, .associations {
+        display: none; /* Hide sidebar info cards on mobile to save vertical space */
+    }
+    
+    .chat-container {
+        height: 0;
+        flex: 1;
+    }
+    
+    .chat-header {
+        padding: 0.8rem 1rem;
+    }
+    
+    .chat-disclaimer-banner {
+        padding: 0.6rem 1rem;
+        gap: 0.8rem;
+    }
+    
+    .chat-disclaimer-banner .banner-content p {
+        font-size: 0.78rem;
+    }
+    
+    .agent-info h2 {
+        font-size: 1rem;
+    }
+    
+    .agent-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+    
+    .chat-messages {
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
+    
+    .message-content {
+        padding: 0.8rem 1.2rem;
+        font-size: 0.95rem;
+    }
+    
+    .chat-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .input-area {
+        padding: 1rem;
+    }
+    
+    input[type="text"] {
+        padding: 0.9rem 1.2rem;
+        font-size: 0.95rem;
+    }
+    
+    .send-btn {
+        width: 48px;
+        height: 48px;
+    }
+    
+    /* Header Actions */
+    .header-actions {
+        gap: 0.6rem;
+    }
+    
+    .btn-text {
+        display: none;
+    }
+    
+    .lang-btn, .reset-btn, .skip-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+
+    /* Dog Cards */
+    .dog-card.premium-card {
+        padding: 1.2rem;
+        gap: 0.8rem;
+    }
+    
+    .dog-card-header {
+        align-items: center;
+    }
+    
+    .score-badge-card {
+        margin-bottom: 0;
+        font-size: 0.85rem;
+        padding: 0.3rem 0.7rem;
+    }
+    
+    .dog-card.premium-card h4 {
+        font-size: 1.1rem;
+    }
+    
+    .dog-specs {
+        gap: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .match-reason, .breed-info {
+        padding: 0.8rem;
+        font-size: 0.85rem;
+    }
+}

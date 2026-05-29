@@ -42,11 +42,19 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button id="reset-btn" class="reset-btn"><i class="fa-solid fa-rotate-right"></i> התחל מחדש</button>
-                    <button id="lang-toggle-btn" class="lang-btn"><i class="fa-solid fa-globe"></i> English</button>
-                    <button id="skip-btn" class="skip-btn" style="display:none;"><i class="fa-solid fa-forward"></i> הצג תוצאות עכשיו</button>
+                    <button id="reset-btn" class="reset-btn"><i class="fa-solid fa-rotate-right"></i> <span class="btn-text">התחל מחדש</span></button>
+                    <button id="lang-toggle-btn" class="lang-btn"><i class="fa-solid fa-globe"></i> <span class="btn-text">English</span></button>
+                    <button id="skip-btn" class="skip-btn" style="display:none;"><i class="fa-solid fa-forward"></i> <span class="btn-text">הצג תוצאות עכשיו</span></button>
                 </div>
             </header>
+            
+            <div class="chat-disclaimer-banner" id="chat-disclaimer-banner">
+                <div class="banner-content">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p><strong>הצהרה אתית:</strong> המלצות האג'נט הן הצעה ראשונית בלבד. כלב הוא נפש חיה, וביקור פיזי במקלט הוא תנאי הכרחי ומחייב לפני אימוץ.</p>
+                </div>
+                <button class="close-banner-btn" onclick="document.getElementById('chat-disclaimer-banner').style.display='none'">&times;</button>
+            </div>
 
             <div class="chat-messages" id="chat-messages">
                 <div class="message agent">
