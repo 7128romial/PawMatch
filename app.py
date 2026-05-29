@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, session, send_from_directory
 from dotenv import load_dotenv
 import os
+import re
 
 load_dotenv()
 
@@ -10,6 +11,16 @@ from ml_engine import recommend_dogs
 app = Flask(__name__)
 # Use a stable secret key to keep session valid across restarts and gunicorn workers
 app.secret_key = os.getenv("SECRET_KEY", "pawmatch_secure_production_key_2026")
+
+def contains_sensitive_info(text):
+    if not text:
+        return False
+    # Remove hyphens and spaces
+    cleaned = re.sub(r'[\s\-]', '', str(text))
+    # Search for exactly 9 or 10 consecutive digits
+    match = re.search(r'(?<!\d)\d{9,10}(?!\d)', cleaned)
+    return bool(match)
+
 
 @app.route('/')
 def index():
@@ -131,6 +142,23 @@ def chat():
     if param_retry_count is None:
         param_retry_count = session.get('param_retry_count', 0)
     session['param_retry_count'] = param_retry_count
+    
+    # Check for sensitive personal information (privacy guardrail)
+    if contains_sensitive_info(user_message):
+        warning_msg = (
+            "⚠️ Attention: Your message seems to contain a phone number or ID number. "
+            "To protect your privacy, please do not share sensitive personal information here. "
+            "Please rewrite your request without it."
+        ) if lang == 'en' else (
+            "⚠️ שים לב: ההודעה שלך נראית כמי שמכילה מספר טלפון או מספר תעודת זהות. "
+            "למען שמירה על פרטיותך וביטחונך, אנא אל תשתף מידע אישי רגיש בצ'אט. "
+            "אנא נסח שוב את פנייתך ללא פרטים אלו."
+        )
+        return jsonify({
+            "response": warning_msg,
+            "session_data": build_session_data()
+        })
+
     
     if current_session_state == "state_q":
         recommended_breeds = client_session.get('recommended_dogs', session.get('recommended_dogs', []))
