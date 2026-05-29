@@ -316,10 +316,10 @@ def get_missing_critical(params):
 def generate_question(param_key, lang='he', retry_count=0):
     if lang == 'he':
         questions_he = {
-            'a1_adapts_well_to_apartment_living': ("ספרו לי על סביבת המגורים שלכם (דירה קטנה, בית גדול, האם יש חצר)?", ["דירה קטנה", "דירה עם מרפסת", "בית עם חצר", "אחר"]),
-            'a4_tolerates_being_alone': ("כמה שעות בערך הכלב צפוי להישאר לבד בבית במהלך היום?", ["מעט מאוד (עובד מהבית)", "חצי יום (4-6 שעות)", "יום שלם (מעל 8 שעות)", "אין לי העדפה"]),
-            'b2_incredibly_kid_friendly_dogs': ("האם יש ילדים או חיות מחמד אחרות בבית? ספרו לי קצת על המשפחה שלכם.", ["כן, ילדים קטנים", "ילדים גדולים", "רק מבוגרים", "אין לי העדפה"]),
-            'a2_good_for_novice_owners': ("מהי רמת הניסיון שלכם בגידול כלבים (האם זהו כלב ראשון או שגידלתם בעבר)?", ["כלב ראשון (אין ניסיון)", "גידלתי בעבר (יש ניסיון)", "אין לי העדפה"]),
+            'a1_adapts_well_to_apartment_living': ("ספרו לי על סביבת המגורים שלכם (דירה קטנה, בית גדול, האם יש חצר)?", None),
+            'a4_tolerates_being_alone': ("כמה שעות בערך הכלב צפוי להישאר לבד בבית במהלך היום?", None),
+            'b2_incredibly_kid_friendly_dogs': ("האם יש ילדים או חיות מחמד אחרות בבית? ספרו לי קצת על המשפחה שלכם.", None),
+            'a2_good_for_novice_owners': ("מהי רמת הניסיון שלכם בגידול כלבים (האם זהו כלב ראשון או שגידלתם בעבר)?", None),
             'sex': ("איזה מין כלב אתם מעדיפים?", ["זכר", "נקבה", "אין לי העדפה"]),
             'size': ("איזה גודל כלב מתאים לכם יותר?", ["קטן", "בינוני", "גדול", "אין לי העדפה"]),
             'hair_length': ("איזה אורך פרווה אתם מעדיפים?", ["קצרה", "ארוכה", "אין לי העדפה"]),
@@ -327,10 +327,10 @@ def generate_question(param_key, lang='he', retry_count=0):
         }
         
         retry_questions_he = {
-            'a1_adapts_well_to_apartment_living': ("האם אתם גרים בדירה (קטנה או גדולה) או בבית פרטי? ספרו לי כדי שנתאים את רמת הפעילות של הכלב למגורים שלכם.", ["דירה קטנה", "דירה עם מרפסת", "בית עם חצר", "אחר"]),
-            'a4_tolerates_being_alone': ("כדי שאדייק בהתאמה, תוכלי להעריך פחות או יותר כמה שעות הכלב יהיה לבד ביום רגיל? (אפשר גם לבחור מהכפתורים מטה)", ["מעט מאוד (עובד מהבית)", "חצי יום (4-6 שעות)", "יום שלם (מעל 8 שעות)", "אין לי העדפה"]),
-            'b2_incredibly_kid_friendly_dogs': ("חשוב לי לדעת אם הכלב יפגוש ילדים קטנים ביומיום או שיש חיות מחמד נוספות בבית, כדי לסנן כלבים מתאימים.", ["כן, ילדים קטנים", "ילדים גדולים", "רק מבוגרים", "אין לי העדפה"]),
-            'a2_good_for_novice_owners': ("האם כבר גידלתם בעבר כלב משלכם, או שזהו הכלב הראשון שאתם מאמצים וזקוקים לגזע קל במיוחד לאילוף?", ["כלב ראשון (אין ניסיון)", "גידלתי בעבר (יש ניסיון)", "אין לי העדפה"]),
+            'a1_adapts_well_to_apartment_living': ("האם אתם גרים בדירה (קטנה או גדולה) או בבית פרטי? ספרו לי כדי שנתאים את רמת הפעילות של הכלב למגורים שלכם.", None),
+            'a4_tolerates_being_alone': ("כדי שאדייק בהתאמה, תוכלי להעריך פחות או יותר כמה שעות הכלב יהיה לבד ביום רגיל?", None),
+            'b2_incredibly_kid_friendly_dogs': ("חשוב לי לדעת אם הכלב יפגוש ילדים קטנים ביומיום או שיש חיות מחמד נוספות בבית, כדי לסנן כלבים מתאימים.", None),
+            'a2_good_for_novice_owners': ("האם כבר גידלתם בעבר כלב משלכם, או שזהו הכלב הראשון שאתם מאמצים וזקוקים לגזע קל במיוחד לאילוף?", None),
             'sex': ("כדי להתקדם, תוכלי לסמן אם יש העדפה למין הכלב?", ["זכר", "נקבה", "אין לי העדפה"]),
             'size': ("איזה טווח גודל של כלב אתם מחפשים? (בחרו מהאפשרויות הבאות כדי לסנן)", ["קטן", "בינוני", "גדול", "אין לי העדפה"]),
             'hair_length': ("בנוגע לפרווה, האם יש לכם העדפה לאורך הפרווה של הכלב?", ["קצרה", "ארוכה", "אין לי העדפה"]),
@@ -343,10 +343,10 @@ def generate_question(param_key, lang='he', retry_count=0):
         
     else:
         questions_en = {
-            'a1_adapts_well_to_apartment_living': ("Tell me about your living environment:", ["Small Apartment", "Medium Apartment", "House with Yard", "Other"]),
-            'a4_tolerates_being_alone': ("Approximately how many hours is the dog expected to be left alone at home during the day?", ["Very Few (WFH)", "Half Day (4-6 hours)", "Full Day (8+ hours)", "No Preference"]),
-            'b2_incredibly_kid_friendly_dogs': ("Are there children or other pets in the house?", ["Yes, Young Kids", "Older Kids", "Adults Only", "No Preference"]),
-            'a2_good_for_novice_owners': ("What is your experience level with dogs?", ["First Dog (No experience)", "Raised Before (Experienced)", "No Preference"]),
+            'a1_adapts_well_to_apartment_living': ("Tell me about your living environment:", None),
+            'a4_tolerates_being_alone': ("Approximately how many hours is the dog expected to be left alone at home during the day?", None),
+            'b2_incredibly_kid_friendly_dogs': ("Are there children or other pets in the house?", None),
+            'a2_good_for_novice_owners': ("What is your experience level with dogs?", None),
             'sex': ("Which gender do you prefer?", ["Male", "Female", "No Preference"]),
             'size': ("Which size fits you best?", ["Small", "Medium", "Large", "No Preference"]),
             'hair_length': ("Which coat length do you prefer?", ["Short", "Long", "No Preference"]),
@@ -354,10 +354,10 @@ def generate_question(param_key, lang='he', retry_count=0):
         }
         
         retry_questions_en = {
-            'a1_adapts_well_to_apartment_living': ("Do you live in an apartment or a house? Please let me know so I can match the activity level:", ["Small Apartment", "Medium Apartment", "House with Yard", "Other"]),
-            'a4_tolerates_being_alone': ("To make a better match, how many hours is the dog expected to be alone on a typical day?", ["Very Few (WFH)", "Half Day (4-6 hours)", "Full Day (8+ hours)", "No Preference"]),
-            'b2_incredibly_kid_friendly_dogs': ("Could you tell me if there are children or other pets in the house so I can screen kid-friendly dogs?", ["Yes, Young Kids", "Older Kids", "Adults Only", "No Preference"]),
-            'a2_good_for_novice_owners': ("Have you owned a dog before, or is this your first time adopting?", ["First Dog (No experience)", "Raised Before (Experienced)", "No Preference"]),
+            'a1_adapts_well_to_apartment_living': ("Do you live in an apartment or a house? Please let know so I can match the activity level:", None),
+            'a4_tolerates_being_alone': ("To make a better match, how many hours is the dog expected to be alone on a typical day?", None),
+            'b2_incredibly_kid_friendly_dogs': ("Could you tell me if there are children or other pets in the house so I can screen kid-friendly dogs?", None),
+            'a2_good_for_novice_owners': ("Have you owned a dog before, or is this your first time adopting?", None),
             'sex': ("Do you have a preference for the dog's gender?", ["Male", "Female", "No Preference"]),
             'size': ("What size range are you looking for?", ["Small", "Medium", "Large", "No Preference"]),
             'hair_length': ("Do you have a preference for short or long coat?", ["Short", "Long", "No Preference"]),
@@ -367,6 +367,7 @@ def generate_question(param_key, lang='he', retry_count=0):
         if retry_count > 0:
             return retry_questions_en.get(param_key, questions_en[param_key])
         return questions_en[param_key]
+
 
 @app.route('/api/button_click', methods=['POST'])
 def button_click():

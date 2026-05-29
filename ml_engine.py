@@ -92,24 +92,31 @@ def calculate_weighted_score(row, text_params):
         'd1_easy_to_train': 15,
         'c1_amount_of_shedding': 15,
         'b1_affectionate_with_family': 5,
-        'b3_dog_friendly': 5
+        'b3_dog_friendly': 5,
+        'd5_tendency_to_bark_or_howl': 10,
+        'e3_exercise_needs': 15,
+        'c2_drooling_potential': 10
     }
     
-    for param, user_val in text_params.items():
-        if param in weights and param in row:
-            w = weights[param]
-            max_score += w
-            
-            # Simple distance normalized to 0-1 (since scale is 1-5)
-            # max distance is 4. So diff/4 is percentage wrong.
-            dog_val = row[param]
-            diff = abs(user_val - dog_val)
-            pct_match = max(0, 1 - (diff / 4.0))
-            score += w * pct_match
+    for param, w in weights.items():
+        max_score += w
+        if param in text_params:
+            user_val = text_params[param]
+            if isinstance(user_val, (int, float)):
+                dog_val = row[param]
+                diff = abs(user_val - dog_val)
+                pct_match = max(0, 1 - (diff / 4.0))
+                score += w * pct_match
+            else:
+                score += w * 0.85
+        else:
+            # Unspecified parameters get a default match of 80% to reflect incomplete info
+            score += w * 0.80
             
     if max_score == 0:
         return 0
     return (score / max_score) * 100
+
 
 def clean_dict(d):
     clean = {}
