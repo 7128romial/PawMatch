@@ -522,7 +522,17 @@ def chat():
         'a4_tolerates_being_alone'
     ]
     missing_level_a = [p for p in level_a if p not in session['text_params']]
-    active_param = missing_level_a[0] if missing_level_a else None
+    
+    level_b = [
+        'd5_tendency_to_bark_or_howl',
+        'c1_amount_of_shedding',
+        'b3_dog_friendly',
+        'b2_incredibly_kid_friendly_dogs',
+        'a2_good_for_novice_owners'
+    ]
+    missing_level_b = [p for p in level_b if p not in session['text_params']]
+    
+    active_param = missing_level_a[0] if missing_level_a else (missing_level_b[0] if missing_level_b else None)
     
     nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang)
     

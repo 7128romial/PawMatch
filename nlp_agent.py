@@ -117,6 +117,11 @@ def analyze_user_input(user_text, current_params=None, active_param=None, lang='
    - "שלא ירייר", "בלי ריר", "נקי", "no drool" -> מפה ל-`c2_drooling_potential: 1`.
 10. רצון בכלב "דבק" ומפנק (b1_affectionate_with_family):
      - "כלב מחבק", "כלב דבק", "כלב מפנק", "להתכרבל", "cuddly dog" -> מפה ל-`b1_affectionate_with_family: 5`.
+11. מענה על שאלות רעש/נביחות (d5_tendency_to_bark_or_howl) ונשירה/אלרגיה (c1_amount_of_shedding):
+     - אם המשתמש אומר "לא לשתי השאלות", "רעש לא ונשירה לא", "לא מפריע לי רעש ולא נשירה" (או שלילה אחרת לשניהם) -> מפה `d5_tendency_to_bark_or_howl: 1` ו-`c1_amount_of_shedding: 5` (המשמעות היא שרעש מפריע ברמה מינימלית, ונשירה מותרת ברמה מקסימלית כי היא אינה מהווה שיקול/בעיה).
+     - אם המשתמש אומר "לא" או "לא מפריע" או "לא מפריע לי" או "לא יפריע" לגבי רעש/נביחות -> מפה `d5_tendency_to_bark_or_howl: 1`.
+     - אם המשתמש אומר "לא" או "לא מפריע" או "אין אלרגיות" או "לא מהווה שיקול" או "לא מפריע לי נשירה" לגבי נשירה/אלרגיות -> מפה `c1_amount_of_shedding: 5`.
+     - אם המשתמש אומר "כן", "יש אלרגיות", "נשירה מפריעה", "עדיף שלא ישיר פרווה", "בלי שיער" לגבי נשירה/אלרגיות -> מפה `c1_amount_of_shedding: 1`.
 
 # שלב 4: התמודדות עם תשובות קצרות וחלקיות (כן/לא/יש/אין) על בסיס הפרמטר הפעיל
 המשתמש נשאל כעת שאלה לגבי הפרמטר הפעיל הבא (active_param): {active_param}
@@ -236,6 +241,11 @@ Please pay close attention to negations and implied meanings in the user's input
    - "no drool", "clean", "without drooling" -> map to `c2_drooling_potential: 1`.
 10. Desire for a cuddly/velcro dog (b1_affectionate_with_family):
     - "cuddly dog", "velcro dog", "affectionate", "cuddle" -> map to `b1_affectionate_with_family: 5`.
+11. Answering combined questions of noise/barking (d5_tendency_to_bark_or_howl) and shedding/allergies (c1_amount_of_shedding):
+    - If the user says "no to both", "neither", "no for both questions", "noise no and shedding no" (or any negation of both): map to `d5_tendency_to_bark_or_howl: 1` and `c1_amount_of_shedding: 5`.
+    - If the user says "no" or "doesn't bother me" for noise/barking: map to `d5_tendency_to_bark_or_howl: 1`.
+    - If the user says "no" or "doesn't bother me" or "no issue" or "not a concern" for shedding/allergies (implying shedding is not a concern): map to `c1_amount_of_shedding: 5`.
+    - If the user says "yes", "have allergies", "shedding is a concern", "prefer no shedding", "no hair" for shedding/allergies: map to `c1_amount_of_shedding: 1`.
 
 # STEP 4: Handling short and partial answers (yes/no/have/don't have) based on the active parameter
 The user is currently being asked a question regarding the following active parameter (active_param): {active_param}
