@@ -21,6 +21,46 @@ def contains_sensitive_info(text):
     match = re.search(r'(?<!\d)\d{9,10}(?!\d)', cleaned)
     return bool(match)
 
+def is_primarily_english(text):
+    if not text:
+        return False
+    letters = re.findall(r'[\u0590-\u05fe]|[a-zA-Z]', str(text))
+    if not letters:
+        return False
+    eng_count = sum(1 for c in letters if re.match(r'[a-zA-Z]', c))
+    heb_count = sum(1 for c in letters if re.match(r'[\u0590-\u05fe]', c))
+    
+    if eng_count > heb_count * 1.5:
+        if len(text.strip().split()) <= 2 and eng_count < 15:
+            return False
+        return True
+    return False
+
+def is_abusive_intent(text):
+    if not text:
+        return False
+    text_clean = text.strip().lower()
+    patterns = [
+        r'להרביץ',
+        r'להכות',
+        r'לבעוט',
+        r'לפגוע בכלב',
+        r'לפגוע לכלב',
+        r'התעללות',
+        r'להרוג',
+        r'לרצוח',
+        r'hit the dog',
+        r'beat the dog',
+        r'abuse',
+        r'hurt the dog',
+        r'kick the dog',
+        r'kill the dog'
+    ]
+    for pattern in patterns:
+        if re.search(pattern, text_clean):
+            return True
+    return False
+
 
 @app.route('/')
 def index():
@@ -318,6 +358,51 @@ def chat():
             "response": warning_msg,
             "session_data": build_session_data()
         })
+
+    # Check for abusive intent or violence towards animals
+    if is_abusive_intent(user_message):
+        abuse_warning = (
+            "🚨 Warning: PawMatch strongly opposes any form of violence or animal abuse. "
+            "Your request has been blocked. A dog is a living soul deserving of respectful treatment, loving care, and complete protection."
+        ) if lang == 'en' else (
+            "🚨 אזהרה: PawMatch מתנגדת בתוקף לכל גילוי של אלימות או התעללות בבעלי חיים. "
+            "פנייתך נחסמה. כלב הוא נפש חיה הזכאית ליחס מכבד, טיפול אוהב והגנה מלאה."
+        )
+        return jsonify({
+            "response": abuse_warning,
+            "session_data": build_session_data()
+        })
+
+    # Check if the user is typing English in Hebrew mode
+    if lang == 'he' and is_primarily_english(user_message):
+        is_button = False
+        current_param = None
+        if 'size' not in session['text_params']:
+            current_param = 'size'
+        elif 'age_group' not in session['text_params']:
+            current_param = 'age_group'
+        elif 'sex' not in session['text_params']:
+            current_param = 'sex'
+        elif 'color' not in session['text_params']:
+            current_param = 'color'
+            
+        if current_param is not None:
+            if parse_filter_value(current_param, user_message) is not None:
+                is_button = True
+                
+        clean_msg = user_message.strip().lower()
+        if clean_msg in ["no preference", "show results now", "other"]:
+            is_button = True
+            
+        if not is_button:
+            lang_warning = (
+                "⚠️ שמנו לב שהקלדת באנגלית. כדי לקבל את החוויה הטובה ביותר ולסייע לנו להתאים לך במדויק, "
+                "אנא לחצו על כפתור 🌐 **English** בראש המסך כדי להעביר את ממשק השיחה לאנגלית."
+            )
+            return jsonify({
+                "response": lang_warning,
+                "session_data": build_session_data()
+            })
 
     is_skip_text = user_message in ["הצג תוצאות עכשיו", "Show Results Now", "הציגי לי תוצאות חלקיות עכשיו", "Show me partial results now"]
     if skip_to_results or is_skip_text:
