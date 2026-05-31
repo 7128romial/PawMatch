@@ -370,14 +370,33 @@ def chat():
         val = parse_filter_value(current_param, user_message)
         if val is not None:
             session['text_params'][current_param] = val
+            next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
+            session['state'] = next_state
+            return jsonify({
+                "response": next_q,
+                "options": next_opts,
+                "session_data": build_session_data()
+            })
+        else:
+            next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
+            session['state'] = next_state
             
-        next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
-        session['state'] = next_state
-        return jsonify({
-            "response": next_q,
-            "options": next_opts,
-            "session_data": build_session_data()
-        })
+            friendly_names = {
+                'he': { 'size': 'גודל', 'age_group': 'גיל', 'sex': 'מין', 'color': 'צבע' },
+                'en': { 'size': 'size', 'age_group': 'age group', 'sex': 'gender', 'color': 'color' }
+            }
+            param_name = friendly_names[lang].get(current_param, current_param)
+            
+            msg = (
+                f"I can only help with matching dogs for adoption. Let's focus on selecting the dog's {param_name}:\n\n{next_q}"
+                if lang == 'en' else
+                f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נתמקד בבחירת {param_name} הכלב:\n\n{next_q}"
+            )
+            return jsonify({
+                "response": msg,
+                "options": next_opts,
+                "session_data": build_session_data()
+            })
         
     # Free-text processing (Steps 2, 4, 5)
     level_a = [
@@ -413,9 +432,15 @@ def chat():
         })
 
     if state == "state_a":
-        msg = "I can only help with matching dog breeds. Tell me about your environment and what you are looking for." if lang == 'en' else "אני יודע לעזור רק בהתאמת גזע כלב, ספרי לי על הסביבה שלך ועל מה את מחפשת."
+        next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
+        msg = (
+            f"I can only help with matching dogs for adoption. Let's get back to our matching:\n\n{next_q}"
+            if lang == 'en' else
+            f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נחזור להתאמה שלנו:\n\n{next_q}"
+        )
         return jsonify({
             "response": msg,
+            "options": next_opts,
             "session_data": build_session_data()
         })
         
