@@ -9,10 +9,18 @@ numerical_cols = ['age_years', 'weight_kg', 'a1_adapts_well_to_apartment_living'
                   'b3_dog_friendly', 'c1_amount_of_shedding', 'c2_drooling_potential', 'd1_easy_to_train', 
                   'd5_tendency_to_bark_or_howl', 'e1_energy_level', 'e3_exercise_needs', 'life_span_min', 'life_span_max']
 
-behavioral_cols = ['a1_adapts_well_to_apartment_living', 'a2_good_for_novice_owners', 'a4_tolerates_being_alone', 
-                   'b1_affectionate_with_family', 'b2_incredibly_kid_friendly_dogs', 'b3_dog_friendly', 
-                   'c1_amount_of_shedding', 'c2_drooling_potential', 'd1_easy_to_train', 
-                   'd5_tendency_to_bark_or_howl', 'e1_energy_level', 'e3_exercise_needs']
+behavioral_cols = [
+    'a1_adapts_well_to_apartment_living',
+    'e3_exercise_needs',
+    'a4_tolerates_being_alone',
+    'd5_tendency_to_bark_or_howl',
+    'c1_amount_of_shedding',
+    'b3_dog_friendly',
+    'b2_incredibly_kid_friendly_dogs',
+    'd1_easy_to_train',
+    'a2_good_for_novice_owners',
+    'c2_drooling_potential'
+]
 
 df_final = None
 df_numerical_scaled = None
@@ -36,7 +44,7 @@ def apply_hard_filters(dogs_df, selects, text_params):
     color = selects.get('color') or text_params.get('color')
     sex = selects.get('sex') or text_params.get('sex')
     size = selects.get('size') or text_params.get('size')
-    hair_length = selects.get('hair_length') or text_params.get('hair_length')
+    age_group = selects.get('age_group') or text_params.get('age_group')
     
     # 1. Physical / Breed preferences filtering
     breed_preference = text_params.get('breed_preference')
@@ -45,21 +53,31 @@ def apply_hard_filters(dogs_df, selects, text_params):
         if len(temp) > 0:
             filtered = temp
 
-    if color:
+    if color and color != "No Preference":
         temp = filtered[filtered['color'] == color]
         if len(temp) > 0: filtered = temp
             
-    if sex:
+    if sex and sex != "No Preference":
         temp = filtered[filtered['sex'] == sex]
         if len(temp) > 0: filtered = temp
             
-    if size:
+    if size and size != "No Preference":
         temp = filtered[filtered['size'] == size]
         if len(temp) > 0: filtered = temp
             
-    if hair_length and 'hair_length' in filtered.columns:
-        temp = filtered[filtered['hair_length'] == hair_length]
-        if len(temp) > 0: filtered = temp
+    if age_group and age_group != "No Preference" and 'age_years' in filtered.columns:
+        if isinstance(age_group, str):
+            age_group_lower = age_group.lower()
+            if age_group_lower == 'puppy':
+                temp = filtered[filtered['age_years'] <= 1.5]
+            elif age_group_lower == 'adult':
+                temp = filtered[(filtered['age_years'] > 1.5) & (filtered['age_years'] < 8)]
+            elif age_group_lower == 'senior':
+                temp = filtered[filtered['age_years'] >= 8]
+            else:
+                temp = filtered
+            if len(temp) > 0:
+                filtered = temp
 
     # 2. Text Critical Filtering
     # If allergy mentioned (c1_amount_of_shedding <= 2 implies hypoallergenic needed)
@@ -80,43 +98,59 @@ def apply_hard_filters(dogs_df, selects, text_params):
     return filtered
 
 def calculate_weighted_score(row, text_params):
-    score = 0
-    max_score = 0
-    
-    weights = {
-        'a1_adapts_well_to_apartment_living': 30,
-        'a4_tolerates_being_alone': 30,
-        'b2_incredibly_kid_friendly_dogs': 30,
-        'a2_good_for_novice_owners': 30,
-        'e1_energy_level': 15,
-        'd1_easy_to_train': 15,
-        'c1_amount_of_shedding': 15,
-        'b1_affectionate_with_family': 5,
-        'b3_dog_friendly': 5,
-        'd5_tendency_to_bark_or_howl': 10,
-        'e3_exercise_needs': 15,
-        'c2_drooling_potential': 10
+    base_weights = {
+        'a1_adapts_well_to_apartment_living': 0.17,
+        'e3_exercise_needs': 0.15,
+        'a4_tolerates_being_alone': 0.12,
+        'd5_tendency_to_bark_or_howl': 0.10,
+        'c1_amount_of_shedding': 0.10,
+        'b3_dog_friendly': 0.09,
+        'b2_incredibly_kid_friendly_dogs': 0.09,
+        'd1_easy_to_train': 0.08,
+        'a2_good_for_novice_owners': 0.05,
+        'c2_drooling_potential': 0.05
     }
     
-    for param, w in weights.items():
-        max_score += w
-        if param in text_params:
-            user_val = text_params[param]
-            if isinstance(user_val, (int, float)):
-                dog_val = row[param]
-                diff = abs(user_val - dog_val)
-                pct_match = max(0, 1 - (diff / 4.0))
-                score += w * pct_match
-            else:
-                score += w * 0.85
-        else:
-            # Unspecified parameters get a default match of 80% to reflect incomplete info
-            score += w * 0.80
+    level_a = {
+        'a1_adapts_well_to_apartment_living',
+        'e3_exercise_needs',
+        'a4_tolerates_being_alone',
+        'd5_tendency_to_bark_or_howl',
+        'c1_amount_of_shedding'
+    }
+    
+    # Identify active parameters for renormalization:
+    # Level A parameters are always active. Level B/C are active only if present in text_params.
+    active_params = []
+    for p in base_weights:
+        if p in level_a or p in text_params:
+            active_params.append(p)
             
-    if max_score == 0:
-        return 0
-    return (score / max_score) * 100
-
+    weight_sum = sum(base_weights[p] for p in active_params)
+    if weight_sum == 0:
+        weight_sum = 1.0
+        
+    score = 0.0
+    for p in active_params:
+        w_norm = base_weights[p] / weight_sum
+        
+        if p in text_params:
+            user_val = text_params[p]
+            if isinstance(user_val, (int, float)):
+                dog_val = row[p]
+                if pd.isna(dog_val):
+                    pct_match = 0.80
+                else:
+                    diff = abs(user_val - dog_val)
+                    pct_match = max(0, 1 - (diff / 4.0))
+                score += w_norm * pct_match
+            else:
+                score += w_norm * 0.85
+        else:
+            # Unspecified Level A parameters get a default match of 80% to prevent score inflation
+            score += w_norm * 0.80
+            
+    return score * 100
 
 def clean_dict(d):
     clean = {}
@@ -133,7 +167,7 @@ def clean_dict(d):
             clean[k] = v
     return clean
 
-def get_fallback_similar(user_vector, target_df=None, k=3):
+def get_fallback_similar(user_vector, target_df=None, k=5):
     if target_df is None:
         target_df = df_final
     # Scale behavior columns only for the selected sub-dataframe indices
@@ -179,7 +213,7 @@ def recommend_dogs(selects, text_params, lang='he'):
             if p in behavioral_cols:
                 idx = behavioral_cols.index(p)
                 user_vector[idx] = (v - 1) / 4.0
-        top_dogs = get_fallback_similar(user_vector, fallback_target_df, 3)
+        top_dogs = get_fallback_similar(user_vector, fallback_target_df, 5)
         dogs_list = []
         for _, d in top_dogs.iterrows():
             d_dict = d.to_dict()
@@ -194,8 +228,8 @@ def recommend_dogs(selects, text_params, lang='he'):
             
         return {"type": "result", "dogs": dogs_list, "message": msg}
 
-    # If we have less than 3, pad with cosine fallback from the fallback target
-    if len(filtered_df) < 3:
+    # If we have less than 5, pad with cosine fallback from the fallback target
+    if len(filtered_df) < 5:
         user_vector = np.full(len(behavioral_cols), 0.5)
         for p, v in text_params.items():
             if p in behavioral_cols:
@@ -207,7 +241,7 @@ def recommend_dogs(selects, text_params, lang='he'):
         # Standardize matching columns
         padded_rows = []
         for _, d in similar_dogs.iterrows():
-            if len(filtered_df) + len(padded_rows) >= 3:
+            if len(filtered_df) + len(padded_rows) >= 5:
                 break
             if d['name'] not in existing_names:
                 d_dict = d.to_dict()
@@ -217,10 +251,10 @@ def recommend_dogs(selects, text_params, lang='he'):
             cleaned_padded = [clean_dict(row) for row in padded_rows]
             filtered_df = pd.concat([filtered_df, pd.DataFrame(cleaned_padded)], ignore_index=True)
 
-    # Always take top 3
-    top_3 = filtered_df.head(3)
+    # Always take top 5
+    top_5 = filtered_df.head(5)
     dogs_list = []
-    for _, d in top_3.iterrows():
+    for _, d in top_5.iterrows():
         d_dict = d.to_dict()
         d_dict['match_score'] = int(round(d['match_score'])) if pd.notna(d['match_score']) else 70
         dogs_list.append(clean_dict(d_dict))

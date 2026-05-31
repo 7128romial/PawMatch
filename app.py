@@ -42,9 +42,10 @@ button_mappings = {
         'גדול': 'Large', 'Large': 'Large',
         'אין לי העדפה': 'No Preference', 'No Preference': 'No Preference'
     },
-    'hair_length': {
-        'קצרה': 'Short', 'Short': 'Short',
-        'ארוכה': 'Long', 'Long': 'Long',
+    'age_group': {
+        'גור': 'Puppy', 'Puppy': 'Puppy',
+        'בוגר': 'Adult', 'Adult': 'Adult',
+        'מבוגר': 'Senior', 'Senior': 'Senior',
         'אין לי העדפה': 'No Preference', 'No Preference': 'No Preference'
     },
     'color': {
@@ -89,12 +90,183 @@ def reset():
 def build_session_data():
     return {
         "text_params": session.get('text_params', {}),
-        "state": session.get('state', 'state_b'),
+        "state": session.get('state', 'step_1_size'),
         "no_preference_count": session.get('no_preference_count', 0),
         "state_b_count": session.get('state_b_count', 0),
         "last_asked_param": session.get('last_asked_param', None),
         "param_retry_count": session.get('param_retry_count', 0)
     }
+
+def build_combined_level_a_question(missing_keys, lang='he'):
+    if lang == 'he':
+        phrases = {
+            'a1_adapts_well_to_apartment_living': "סביבת המגורים שלכם (דירה, בית עם חצר)",
+            'e3_exercise_needs': "רמת הפעילות הפיזית או הטיולים שתוכלו להעניק לכלב",
+            'a4_tolerates_being_alone': "כמה שעות בערך הכלב יישאר לבד ביום",
+            'd5_tendency_to_bark_or_howl': "האם רעש או נביחות יפריעו לכם",
+            'c1_amount_of_shedding': "האם נשירת פרווה/אלרגיות מהוות שיקול עבורכם"
+        }
+        parts = [phrases[k] for k in missing_keys if k in phrases]
+        if len(parts) == 1:
+            return f"כדי לדייק בהתאמה, ספרו לי קצת על {parts[0]}."
+        elif len(parts) == 2:
+            return f"כדי לדייק בהתאמה, אשמח לדעת: {parts[0]}? וגם לגבי {parts[1]}?"
+        else:
+            joined = " וגם ".join([", ".join(parts[:-1]), parts[-1]])
+            return f"כדי לדייק בהתאמה, אשמח לקבל עוד כמה פרטים: {joined}?"
+    else:
+        phrases = {
+            'a1_adapts_well_to_apartment_living': "your living environment (apartment, house with yard)",
+            'e3_exercise_needs': "the exercise level or walks you can provide for the dog",
+            'a4_tolerates_being_alone': "how many hours the dog will be left alone daily",
+            'd5_tendency_to_bark_or_howl': "whether barking or noise will be an issue for you",
+            'c1_amount_of_shedding': "whether shedding or allergies are a concern for you"
+        }
+        parts = [phrases[k] for k in missing_keys if k in phrases]
+        if len(parts) == 1:
+            return f"To make the best match, tell me a bit about {parts[0]}."
+        elif len(parts) == 2:
+            return f"To make the best match, I'd love to know: {parts[0]}? And also: {parts[1]}?"
+        else:
+            joined = " and also: ".join([", ".join(parts[:-1]), parts[-1]])
+            return f"To help me make the best match, could you tell me about: {joined}?"
+
+def build_combined_level_b_question(missing_keys, lang='he'):
+    if lang == 'he':
+        phrases = {
+            'b3_dog_friendly': "האם יש לכם כלבים נוספים בבית",
+            'b2_incredibly_kid_friendly_dogs': "האם הכלב יפגוש ילדים קטנים ביומיום",
+            'a2_good_for_novice_owners': "האם יש לכם ניסיון קודם בגידול כלב"
+        }
+        parts = [phrases[k] for k in missing_keys if k in phrases]
+        joined = " וגם ".join([", ".join(parts[:-1]), parts[-1]]) if len(parts) > 1 else parts[0]
+        return f"שאלה אחרונה חביבה (אופציונלית) – ספרו לי על: {joined}."
+    else:
+        phrases = {
+            'b3_dog_friendly': "whether you have other dogs at home",
+            'b2_incredibly_kid_friendly_dogs': "if you have young kids at home",
+            'a2_good_for_novice_owners': "your experience level with dogs (is this your first dog)"
+        }
+        parts = [phrases[k] for k in missing_keys if k in phrases]
+        joined = " and also: ".join([", ".join(parts[:-1]), parts[-1]]) if len(parts) > 1 else parts[0]
+        return f"One last optional question – tell me about: {joined}."
+
+def get_next_question_and_options(text_params, lang='he'):
+    # Step 1: Sequential physical filters
+    if 'size' not in text_params:
+        question = "איזה גודל כלב מתאים לכם יותר?" if lang == 'he' else "Which size fits you best?"
+        options = ["קטן", "בינוני", "גדול", "אין לי העדפה"] if lang == 'he' else ["Small", "Medium", "Large", "No Preference"]
+        return question, options, 'step_1_size'
+        
+    if 'age_group' not in text_params:
+        question = "איזה גיל כלב אתם מעדיפים?" if lang == 'he' else "Which age group do you prefer?"
+        options = ["גור", "בוגר", "מבוגר", "אין לי העדפה"] if lang == 'he' else ["Puppy", "Adult", "Senior", "No Preference"]
+        return question, options, 'step_1_age'
+        
+    if 'sex' not in text_params:
+        question = "איזה מין כלב אתם מעדיפים?" if lang == 'he' else "Which gender do you prefer?"
+        options = ["זכר", "נקבה", "אין לי העדפה"] if lang == 'he' else ["Male", "Female", "No Preference"]
+        return question, options, 'step_1_sex'
+        
+    if 'color' not in text_params:
+        question = "איזה צבע פרווה אתם מעדיפים?" if lang == 'he' else "Do you have any coat color preference?"
+        options = ["שחור", "לבן", "חום", "אפור", "מעורב", "אין לי העדפה"] if lang == 'he' else ["Black", "White", "Brown", "Gray", "Mixed", "No Preference"]
+        return question, options, 'step_1_color'
+
+    # All physical filters answered.
+    # Level A parameters
+    level_a = [
+        'a1_adapts_well_to_apartment_living',
+        'e3_exercise_needs',
+        'a4_tolerates_being_alone',
+        'd5_tendency_to_bark_or_howl',
+        'c1_amount_of_shedding'
+    ]
+    missing_level_a = [p for p in level_a if p not in text_params]
+    
+    if not text_params.get('welcome_done'):
+        question = ("מעולה. כעת ספרו לי קצת על עצמכם, סביבת המגורים ואורח החיים שלכם ואיזה כלב אתם מחפשים כדי שנוכל להתאים לכם את החבר המושלם." 
+                    if lang == 'he' else 
+                    "Great. Now tell me a bit about yourself, your lifestyle, and what kind of dog you are looking for so we can match you with the perfect companion.")
+        return question, None, 'step_2_welcome'
+
+    # Step 4: Combined Level A question
+    if missing_level_a:
+        question = build_combined_level_a_question(missing_level_a, lang)
+        return question, None, 'step_4_essential'
+
+    # Step 5: Combined Level B question
+    level_b = [
+        'b3_dog_friendly',
+        'b2_incredibly_kid_friendly_dogs',
+        'a2_good_for_novice_owners'
+    ]
+    missing_level_b = [p for p in level_b if p not in text_params]
+    if missing_level_b and not text_params.get('soft_done'):
+        question = build_combined_level_b_question(missing_level_b, lang)
+        options = ["הצג תוצאות עכשיו"] if lang == 'he' else ["Show Results Now"]
+        return question, options, 'step_5_soft'
+
+    # Everything is complete!
+    return None, None, 'state_q'
+
+def parse_filter_value(param, text):
+    if not text:
+        return None
+    text_clean = text.strip().lower()
+    
+    if text_clean in ["no preference", "אין העדפה", "אין לי העדפה", "כלשהו", "any", "בלי העדפה", "לא משנה", "הכל הולך", "הכל"]:
+        return "No Preference"
+        
+    if param == 'size':
+        if text_clean in ['קטן', 'small', 's', 'small size', 'קטנה']:
+            return 'Small'
+        if text_clean in ['בינוני', 'medium', 'm', 'medium size', 'בינונית']:
+            return 'Medium'
+        if text_clean in ['גדול', 'large', 'l', 'large size', 'גדולה', 'ענק']:
+            return 'Large'
+            
+    elif param == 'age_group':
+        if text_clean in ['גור', 'puppy', 'puppies', 'גורים', 'צעיר', 'גורה']:
+            return 'Puppy'
+        if text_clean in ['בוגר', 'adult', 'בוגרים', 'בוגרת']:
+            return 'Adult'
+        if text_clean in ['מבוגר', 'senior', 'מבוגרים', 'מבוגרת', 'זקן', 'קשיש']:
+            return 'Senior'
+            
+    elif param == 'sex':
+        if text_clean in ['זכר', 'male', 'בן', 'זכרים']:
+            return 'Male'
+        if text_clean in ['נקבה', 'female', 'בת', 'נקבות']:
+            return 'Female'
+            
+    elif param == 'color':
+        if text_clean in ['שחור', 'black', 'dark', 'שחורה']:
+            return 'Black'
+        if text_clean in ['לבן', 'white', 'light', 'לבנה']:
+            return 'White'
+        if text_clean in ['חום', 'brown', 'tan', 'חום בהיר', 'ג\'ינג\'י', 'חומה']:
+            return 'Tan'
+        if text_clean in ['אפור', 'gray', 'grey', 'אפורה']:
+            return 'Gray'
+        if text_clean in ['מעורב', 'mixed', 'bicolor', 'דו-צבעי', 'דו צבעי', 'צבעוני']:
+            return 'Bicolor'
+            
+    return None
+
+def get_missing_critical(params):
+    v3_criticals = [
+        'size',
+        'age_group',
+        'sex',
+        'color',
+        'a1_adapts_well_to_apartment_living',
+        'e3_exercise_needs',
+        'a4_tolerates_being_alone',
+        'd5_tendency_to_bark_or_howl',
+        'c1_amount_of_shedding'
+    ]
+    return [c for c in v3_criticals if c not in params]
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -104,10 +276,8 @@ def chat():
     skip_to_results = data.get('skip', False)
     lang = data.get('lang', 'he')
     
-    # Store active language in session
     session['lang'] = lang
     
-    # Load session data from request payload or fallback to Flask session
     client_session = data.get('session_data') or {}
     
     text_params = client_session.get('text_params')
@@ -130,18 +300,8 @@ def chat():
     
     current_session_state = client_session.get('state')
     if current_session_state is None:
-        current_session_state = session.get('state', 'state_b')
+        current_session_state = session.get('state', 'step_1_size')
     session['state'] = current_session_state
-    
-    last_asked_param = client_session.get('last_asked_param')
-    if last_asked_param is None:
-        last_asked_param = session.get('last_asked_param', None)
-    session['last_asked_param'] = last_asked_param
-    
-    param_retry_count = client_session.get('param_retry_count')
-    if param_retry_count is None:
-        param_retry_count = session.get('param_retry_count', 0)
-    session['param_retry_count'] = param_retry_count
     
     # Check for sensitive personal information (privacy guardrail)
     if contains_sensitive_info(user_message):
@@ -159,7 +319,12 @@ def chat():
             "session_data": build_session_data()
         })
 
-    
+    is_skip_text = user_message in ["הצג תוצאות עכשיו", "Show Results Now", "הציגי לי תוצאות חלקיות עכשיו", "Show me partial results now"]
+    if skip_to_results or is_skip_text:
+        session['text_params']['soft_done'] = True
+        session['state'] = 'state_q'
+        return process_recommendation(selects, session['text_params'])
+        
     if current_session_state == "state_q":
         recommended_breeds = client_session.get('recommended_dogs', session.get('recommended_dogs', []))
         session['recommended_dogs'] = recommended_breeds
@@ -170,8 +335,6 @@ def chat():
                 "session_data": {
                     "text_params": text_params,
                     "state": "state_q",
-                    "no_preference_count": no_preference_count,
-                    "state_b_count": state_b_count,
                     "recommended_dogs": recommended_breeds
                 }
             })
@@ -181,14 +344,9 @@ def chat():
             "session_data": {
                 "text_params": text_params,
                 "state": "state_q",
-                "no_preference_count": no_preference_count,
-                "state_b_count": state_b_count,
                 "recommended_dogs": recommended_breeds
             }
         })
-        
-    if skip_to_results or session['no_preference_count'] >= 2:
-        return process_recommendation(selects, session['text_params'])
         
     if not user_message:
         err_msg = "Please enter text." if lang == 'en' else "אנא הכנס טקסט."
@@ -197,39 +355,42 @@ def chat():
             "session_data": build_session_data()
         })
         
-    # Get missing parameters before processing
-    missing_before = get_missing_critical(session['text_params'])
+    # Check if we are in Step 1 (Physical filters)
+    current_param = None
+    if 'size' not in session['text_params']:
+        current_param = 'size'
+    elif 'age_group' not in session['text_params']:
+        current_param = 'age_group'
+    elif 'sex' not in session['text_params']:
+        current_param = 'sex'
+    elif 'color' not in session['text_params']:
+        current_param = 'color'
+        
+    if current_param is not None:
+        val = parse_filter_value(current_param, user_message)
+        if val is not None:
+            session['text_params'][current_param] = val
+            
+        next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
+        session['state'] = next_state
+        return jsonify({
+            "response": next_q,
+            "options": next_opts,
+            "session_data": build_session_data()
+        })
+        
+    # Free-text processing (Steps 2, 4, 5)
+    level_a = [
+        'a1_adapts_well_to_apartment_living',
+        'e3_exercise_needs',
+        'a4_tolerates_being_alone',
+        'd5_tendency_to_bark_or_howl',
+        'c1_amount_of_shedding'
+    ]
+    missing_level_a = [p for p in level_a if p not in session['text_params']]
+    active_param = missing_level_a[0] if missing_level_a else None
     
-    # Intercept button selections / "No Preference" in the backend
-    is_button_option = False
-    extracted_val = None
-    if missing_before:
-        current_param = missing_before[0]
-        if current_param in button_mappings:
-            msg_key = user_message.strip()
-            if msg_key in button_mappings[current_param]:
-                extracted_val = button_mappings[current_param][msg_key]
-                is_button_option = True
-            elif msg_key.lower() in {k.lower(): v for k, v in button_mappings[current_param].items()}:
-                extracted_val = {k.lower(): v for k, v in button_mappings[current_param].items()}[msg_key.lower()]
-                is_button_option = True
-
-    if is_button_option:
-        session['text_params'][current_param] = extracted_val
-        # Bypass the LLM API call, preserve the session state
-        nlp_result = {"state": session.get('state', "state_c"), "extracted_parameters": {}}
-    elif user_message in ["אין לי העדפה", "No Preference"] and missing_before:
-        current_param = missing_before[0]
-        if current_param in ['sex', 'size', 'hair_length', 'color']:
-            session['text_params'][current_param] = "No Preference"
-        else:
-            session['text_params'][current_param] = 3
-        # Bypass the LLM API call
-        nlp_result = {"state": session.get('state', "state_c"), "extracted_parameters": {}}
-    else:
-        # Analyze input normally via LLM
-        active_param = missing_before[0] if missing_before else None
-        nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang)
+    nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang)
     
     if nlp_result.get("state") == "error":
         err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
@@ -241,21 +402,6 @@ def chat():
     state = nlp_result.get('state')
     extracted = nlp_result.get('extracted_parameters', {})
     
-    # Merge parameters
-    for k, v in extracted.items():
-        session['text_params'][k] = v
-        
-    # Prevent regression: if current session state is state_c or state_d, do not regress to state_a or state_b
-    current_session_state = session.get('state', 'state_b')
-    if current_session_state in ["state_c", "state_d"] and state in ["state_a", "state_b"]:
-        state = current_session_state
-        
-    # Force state to state_c if there are still missing critical parameters
-    missing_criticals = get_missing_critical(session['text_params'])
-    if missing_criticals and state == "state_d":
-        state = "state_c"
-        
-    # State Machine Logic
     if state == "state_e":
         msg = ("Adopting a dog is a significant and long-term responsibility (10-15 years) and is not recommended solely out of boredom or as a temporary solution. "
                "A dog is a living soul that needs care, time, and lots of love. If you are ready for this commitment, tell me about your lifestyle and we can begin the match.") if lang == 'en' else \
@@ -267,135 +413,32 @@ def chat():
         })
 
     if state == "state_a":
-        session['state'] = "state_a"
         msg = "I can only help with matching dog breeds. Tell me about your environment and what you are looking for." if lang == 'en' else "אני יודע לעזור רק בהתאמת גזע כלב, ספרי לי על הסביבה שלך ועל מה את מחפשת."
         return jsonify({
             "response": msg,
             "session_data": build_session_data()
         })
         
-    if state == "state_b":
-        session['state_b_count'] = session.get('state_b_count', 0) + 1
-        # If user is stuck in state_b for consecutive requests, upgrade to state_c to guide them
-        if session['state_b_count'] >= 2:
-            state = "state_c"
-        else:
-            session['state'] = "state_b"
-            msg = "I'd love to hear more general details: Where do you live? How much time are you home? And what kind of dog personality matches you?" if lang == 'en' else "אשמח לשמוע עוד פרטים כלליים: איפה את גרה? כמה זמן את בבית? ואיזה אופי כלב מתאים לך?"
-            return jsonify({
-                "response": msg,
-                "session_data": build_session_data()
-            })
-            
-    if state == "state_c":
-        session['state_b_count'] = 0
-        session['state'] = "state_c"
-        # Missing some info, ask a specific question with buttons
-        missing = get_missing_critical(session['text_params'])
-        if missing:
-            current_param = missing[0]
-            last_asked = session.get('last_asked_param')
-            retry_count = session.get('param_retry_count', 0)
-            
-            if last_asked == current_param:
-                retry_count += 1
-            else:
-                last_asked = current_param
-                retry_count = 0
-                
-            session['last_asked_param'] = last_asked
-            session['param_retry_count'] = retry_count
-            
-            question, options = generate_question(current_param, lang, retry_count)
-            return jsonify({
-                "response": question,
-                "options": options,
-                "session_data": build_session_data()
-            })
-        else:
-            # If we somehow have all critical parameters, treat as state_d
-            state = "state_d"
-            
-    if state == "state_d":
-        session['state_b_count'] = 0
-        session['state'] = "state_d"
+    # Merge extracted parameters
+    for k, v in extracted.items():
+        session['text_params'][k] = v
+        
+    if current_session_state == 'step_2_welcome':
+        session['text_params']['welcome_done'] = True
+    elif current_session_state == 'step_5_soft':
+        session['text_params']['soft_done'] = True
+        
+    next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
+    session['state'] = next_state
+    
+    if next_state == 'state_q':
         return process_recommendation(selects, session['text_params'])
-
-    session['state'] = state
-    msg = "I couldn't understand, could you rephrase?" if lang == 'en' else "לא הצלחתי להבין, אפשר לנסח שוב?"
-    return jsonify({
-        "response": msg,
-        "session_data": build_session_data()
-    })
-
-def get_missing_critical(params):
-    criticals = [
-        'a1_adapts_well_to_apartment_living',
-        'a4_tolerates_being_alone',
-        'b2_incredibly_kid_friendly_dogs',
-        'a2_good_for_novice_owners',
-        'sex',
-        'size',
-        'hair_length',
-        'color'
-    ]
-    return [c for c in criticals if c not in params]
-
-def generate_question(param_key, lang='he', retry_count=0):
-    if lang == 'he':
-        questions_he = {
-            'a1_adapts_well_to_apartment_living': ("ספרו לי על סביבת המגורים שלכם (דירה קטנה, בית גדול, האם יש חצר)?", None),
-            'a4_tolerates_being_alone': ("כמה שעות בערך הכלב צפוי להישאר לבד בבית במהלך היום?", None),
-            'b2_incredibly_kid_friendly_dogs': ("האם יש ילדים או חיות מחמד אחרות בבית? ספרו לי קצת על המשפחה שלכם.", None),
-            'a2_good_for_novice_owners': ("מהי רמת הניסיון שלכם בגידול כלבים (האם זהו כלב ראשון או שגידלתם בעבר)?", None),
-            'sex': ("איזה מין כלב אתם מעדיפים?", ["זכר", "נקבה", "אין לי העדפה"]),
-            'size': ("איזה גודל כלב מתאים לכם יותר?", ["קטן", "בינוני", "גדול", "אין לי העדפה"]),
-            'hair_length': ("איזה אורך פרווה אתם מעדיפים?", ["קצרה", "ארוכה", "אין לי העדפה"]),
-            'color': ("איזה צבע פרווה אתם מעדיפים?", ["שחור", "לבן", "חום", "אפור", "מעורב", "אין לי העדפה"])
-        }
-        
-        retry_questions_he = {
-            'a1_adapts_well_to_apartment_living': ("האם אתם גרים בדירה (קטנה או גדולה) או בבית פרטי? ספרו לי כדי שנתאים את רמת הפעילות של הכלב למגורים שלכם.", None),
-            'a4_tolerates_being_alone': ("כדי שאדייק בהתאמה, תוכלי להעריך פחות או יותר כמה שעות הכלב יהיה לבד ביום רגיל?", None),
-            'b2_incredibly_kid_friendly_dogs': ("חשוב לי לדעת אם הכלב יפגוש ילדים קטנים ביומיום או שיש חיות מחמד נוספות בבית, כדי לסנן כלבים מתאימים.", None),
-            'a2_good_for_novice_owners': ("האם כבר גידלתם בעבר כלב משלכם, או שזהו הכלב הראשון שאתם מאמצים וזקוקים לגזע קל במיוחד לאילוף?", None),
-            'sex': ("כדי להתקדם, תוכלי לסמן אם יש העדפה למין הכלב?", ["זכר", "נקבה", "אין לי העדפה"]),
-            'size': ("איזה טווח גודל של כלב אתם מחפשים? (בחרו מהאפשרויות הבאות כדי לסנן)", ["קטן", "בינוני", "גדול", "אין לי העדפה"]),
-            'hair_length': ("בנוגע לפרווה, האם יש לכם העדפה לאורך הפרווה של הכלב?", ["קצרה", "ארוכה", "אין לי העדפה"]),
-            'color': ("בנוגע לצבע הפרווה, האם יש צבע ספציפי שתרצו?", ["שחור", "לבן", "חום", "אפור", "מעורב", "אין לי העדפה"])
-        }
-        
-        if retry_count > 0:
-            return retry_questions_he.get(param_key, questions_he[param_key])
-        return questions_he[param_key]
-        
     else:
-        questions_en = {
-            'a1_adapts_well_to_apartment_living': ("Tell me about your living environment:", None),
-            'a4_tolerates_being_alone': ("Approximately how many hours is the dog expected to be left alone at home during the day?", None),
-            'b2_incredibly_kid_friendly_dogs': ("Are there children or other pets in the house?", None),
-            'a2_good_for_novice_owners': ("What is your experience level with dogs?", None),
-            'sex': ("Which gender do you prefer?", ["Male", "Female", "No Preference"]),
-            'size': ("Which size fits you best?", ["Small", "Medium", "Large", "No Preference"]),
-            'hair_length': ("Which coat length do you prefer?", ["Short", "Long", "No Preference"]),
-            'color': ("Do you have any coat color preference?", ["Black", "White", "Brown", "Gray", "Mixed", "No Preference"])
-        }
-        
-        retry_questions_en = {
-            'a1_adapts_well_to_apartment_living': ("Do you live in an apartment or a house? Please let know so I can match the activity level:", None),
-            'a4_tolerates_being_alone': ("To make a better match, how many hours is the dog expected to be alone on a typical day?", None),
-            'b2_incredibly_kid_friendly_dogs': ("Could you tell me if there are children or other pets in the house so I can screen kid-friendly dogs?", None),
-            'a2_good_for_novice_owners': ("Have you owned a dog before, or is this your first time adopting?", None),
-            'sex': ("Do you have a preference for the dog's gender?", ["Male", "Female", "No Preference"]),
-            'size': ("What size range are you looking for?", ["Small", "Medium", "Large", "No Preference"]),
-            'hair_length': ("Do you have a preference for short or long coat?", ["Short", "Long", "No Preference"]),
-            'color': ("Is there any specific coat color you prefer?", ["Black", "White", "Brown", "Gray", "Mixed", "No Preference"])
-        }
-        
-        if retry_count > 0:
-            return retry_questions_en.get(param_key, questions_en[param_key])
-        return questions_en[param_key]
-
+        return jsonify({
+            "response": next_q,
+            "options": next_opts,
+            "session_data": build_session_data()
+        })
 
 @app.route('/api/button_click', methods=['POST'])
 def button_click():
@@ -406,12 +449,11 @@ def button_click():
     session['text_params'] = client_session.get('text_params', session.get('text_params', {}))
     session['no_preference_count'] = client_session.get('no_preference_count', session.get('no_preference_count', 0))
     session['state_b_count'] = client_session.get('state_b_count', session.get('state_b_count', 0))
-    session['state'] = client_session.get('state', session.get('state', 'state_b'))
+    session['state'] = client_session.get('state', session.get('state', 'step_1_size'))
     
     if selection in ["אין לי העדפה", "No Preference"]:
         session['no_preference_count'] = session.get('no_preference_count', 0) + 1
         
-    # Inject selection as message so chat() can process it
     data['message'] = selection
     return chat()
 
@@ -432,7 +474,6 @@ def process_recommendation(selects, text_params):
             
         dogs = rec.get("dogs", [])
         
-        # Generate warm personalized explanations and breed details using GPT-3.5
         explanations = []
         if dogs:
             try:
@@ -443,7 +484,6 @@ def process_recommendation(selects, text_params):
             if not isinstance(explanations, list):
                 explanations = []
             
-        # Merge explanations back into the dog records
         explanation_map = {e.get("name"): e for e in explanations if isinstance(e, dict)}
         for dog in dogs:
             exp = explanation_map.get(dog.get("name"), {})
@@ -454,7 +494,6 @@ def process_recommendation(selects, text_params):
         top_score = dogs[0].get("match_score") if dogs else 0
         score_val = top_score if (is_full_match and top_score >= 90) else None
 
-        # Do not clear session entirely, transition to state_q so user can ask questions about the breeds
         session['state'] = "state_q"
         session['recommended_dogs'] = [d.get("breed") for d in dogs]
         
@@ -493,7 +532,7 @@ def process_recommendation(selects, text_params):
             "response": err_msg,
             "session_data": {
                 "text_params": text_params,
-                "state": "state_c",
+                "state": "step_1_size",
                 "no_preference_count": 0,
                 "state_b_count": 0
             }

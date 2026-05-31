@@ -302,7 +302,7 @@ def generate_explanations(dogs, user_params, lang='he'):
         
     system_prompt = f"""
 You are a warm, professional dog adoption coordinator for PawMatch.
-Write personalized explanations and breed descriptions for 3 recommended dogs.
+Write personalized explanations and breed descriptions for 5 recommended dogs.
 Generate your response in JSON format. The response language must be strictly: {"Hebrew (עברית)" if lang == 'he' else "English"}.
 
 Output JSON structure:
