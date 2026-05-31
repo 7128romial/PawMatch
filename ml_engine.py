@@ -125,9 +125,7 @@ def calculate_weighted_score(row, text_params):
     level_a = {
         'a1_adapts_well_to_apartment_living',
         'e3_exercise_needs',
-        'a4_tolerates_being_alone',
-        'd5_tendency_to_bark_or_howl',
-        'c1_amount_of_shedding'
+        'a4_tolerates_being_alone'
     }
     
     # Identify active parameters for renormalization:

@@ -174,6 +174,8 @@ def build_combined_level_a_question(missing_keys, lang='he'):
 def build_combined_level_b_question(missing_keys, lang='he'):
     if lang == 'he':
         phrases = {
+            'd5_tendency_to_bark_or_howl': "האם רעש או נביחות יפריעו לכם",
+            'c1_amount_of_shedding': "האם נשירת פרווה/אלרגיות מהוות שיקול עבורכם",
             'b3_dog_friendly': "האם יש לכם כלבים נוספים בבית",
             'b2_incredibly_kid_friendly_dogs': "האם הכלב יפגוש ילדים קטנים ביומיום",
             'a2_good_for_novice_owners': "האם יש לכם ניסיון קודם בגידול כלב"
@@ -183,6 +185,8 @@ def build_combined_level_b_question(missing_keys, lang='he'):
         return f"שאלה אחרונה חביבה (אופציונלית) – ספרו לי על: {joined}."
     else:
         phrases = {
+            'd5_tendency_to_bark_or_howl': "whether barking or noise will be an issue for you",
+            'c1_amount_of_shedding': "whether shedding or allergies are a concern for you",
             'b3_dog_friendly': "whether you have other dogs at home",
             'b2_incredibly_kid_friendly_dogs': "if you have young kids at home",
             'a2_good_for_novice_owners': "your experience level with dogs (is this your first dog)"
@@ -218,9 +222,7 @@ def get_next_question_and_options(text_params, lang='he'):
     level_a = [
         'a1_adapts_well_to_apartment_living',
         'e3_exercise_needs',
-        'a4_tolerates_being_alone',
-        'd5_tendency_to_bark_or_howl',
-        'c1_amount_of_shedding'
+        'a4_tolerates_being_alone'
     ]
     missing_level_a = [p for p in level_a if p not in text_params]
     
@@ -237,6 +239,8 @@ def get_next_question_and_options(text_params, lang='he'):
 
     # Step 5: Combined Level B question
     level_b = [
+        'd5_tendency_to_bark_or_howl',
+        'c1_amount_of_shedding',
         'b3_dog_friendly',
         'b2_incredibly_kid_friendly_dogs',
         'a2_good_for_novice_owners'
@@ -302,9 +306,7 @@ def get_missing_critical(params):
         'color',
         'a1_adapts_well_to_apartment_living',
         'e3_exercise_needs',
-        'a4_tolerates_being_alone',
-        'd5_tendency_to_bark_or_howl',
-        'c1_amount_of_shedding'
+        'a4_tolerates_being_alone'
     ]
     return [c for c in v3_criticals if c not in params]
 
@@ -517,9 +519,7 @@ def chat():
     level_a = [
         'a1_adapts_well_to_apartment_living',
         'e3_exercise_needs',
-        'a4_tolerates_being_alone',
-        'd5_tendency_to_bark_or_howl',
-        'c1_amount_of_shedding'
+        'a4_tolerates_being_alone'
     ]
     missing_level_a = [p for p in level_a if p not in session['text_params']]
     active_param = missing_level_a[0] if missing_level_a else None
