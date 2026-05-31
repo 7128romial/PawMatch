@@ -463,6 +463,15 @@ def chat():
                 "session_data": build_session_data()
             })
         else:
+            is_off_topic = False
+            nlp_result = analyze_user_input(user_message, session['text_params'], active_param=None, lang=lang)
+            if nlp_result.get("state") == "state_a":
+                is_off_topic = True
+            
+            if not is_off_topic and nlp_result.get("state") != "error" and nlp_result.get("extracted_parameters"):
+                for k, v in nlp_result["extracted_parameters"].items():
+                    session['text_params'][k] = v
+            
             next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
             session['state'] = next_state
             
@@ -472,11 +481,32 @@ def chat():
             }
             param_name = friendly_names[lang].get(current_param, current_param)
             
-            msg = (
-                f"I can only help with matching dogs for adoption. Let's focus on selecting the dog's {param_name}:\n\n{next_q}"
-                if lang == 'en' else
-                f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נתמקד בבחירת {param_name} הכלב:\n\n{next_q}"
-            )
+            if is_off_topic:
+                msg = (
+                    f"I can only help with matching dogs for adoption. Let's focus on selecting the dog's {param_name}:\n\n{next_q}"
+                    if lang == 'en' else
+                    f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נתמקד בבחירת {param_name} הכלב:\n\n{next_q}"
+                )
+            else:
+                is_greeting = False
+                clean_msg = user_message.strip().lower()
+                greetings = ["היי", "שלום", "אהלן", "בוקר טוב", "צהריים טובים", "ערב טוב", "hi", "hello", "hey", "howdy"]
+                if clean_msg in greetings or any(g in clean_msg for g in ["רוצה לאמץ", "מעוניין לאמץ", "מחפש כלב", "רוצה כלב", "want to adopt", "adopt a dog", "looking for a dog"]):
+                    is_greeting = True
+                
+                if is_greeting:
+                    msg = (
+                        f"Great! Let's start the matching process:\n\n{next_q}"
+                        if lang == 'en' else
+                        f"בשמחה! בואו נתחיל בתהליך ההתאמה:\n\n{next_q}"
+                    )
+                else:
+                    msg = (
+                        f"Got it. Let's focus on selecting the dog's {param_name} to proceed:\n\n{next_q}"
+                        if lang == 'en' else
+                        f"הבנתי. בואו נתמקד בבחירת {param_name} הכלב כדי שנוכל להתקדם:\n\n{next_q}"
+                    )
+            
             return jsonify({
                 "response": msg,
                 "options": next_opts,

@@ -4,6 +4,14 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
 
+def safe_int(val, default=None):
+    if val is None:
+        return default
+    try:
+        return int(float(val))
+    except (ValueError, TypeError):
+        return default
+
 numerical_cols = ['age_years', 'weight_kg', 'a1_adapts_well_to_apartment_living', 'a2_good_for_novice_owners', 
                   'a4_tolerates_being_alone', 'b1_affectionate_with_family', 'b2_incredibly_kid_friendly_dogs', 
                   'b3_dog_friendly', 'c1_amount_of_shedding', 'c2_drooling_potential', 'd1_easy_to_train', 
@@ -81,17 +89,20 @@ def apply_hard_filters(dogs_df, selects, text_params):
 
     # 2. Text Critical Filtering
     # If allergy mentioned (c1_amount_of_shedding <= 2 implies hypoallergenic needed)
-    if text_params.get('c1_amount_of_shedding', 5) <= 2:
+    c1_val = safe_int(text_params.get('c1_amount_of_shedding'), 5)
+    if c1_val <= 2:
         temp = filtered[filtered['c1_amount_of_shedding'] <= 2]
         if len(temp) > 0: filtered = temp
         
     # If small apartment (a1 >= 4)
-    if text_params.get('a1_adapts_well_to_apartment_living', 0) >= 4:
+    a1_val = safe_int(text_params.get('a1_adapts_well_to_apartment_living'), 0)
+    if a1_val >= 4:
         temp = filtered[filtered['weight_kg'] <= 25] # Small/Medium
         if len(temp) > 0: filtered = temp
         
     # If kids (b2 >= 4)
-    if text_params.get('b2_incredibly_kid_friendly_dogs', 0) >= 4:
+    b2_val = safe_int(text_params.get('b2_incredibly_kid_friendly_dogs'), 0)
+    if b2_val >= 4:
         temp = filtered[filtered['b2_incredibly_kid_friendly_dogs'] >= 4]
         if len(temp) > 0: filtered = temp
 
@@ -136,12 +147,14 @@ def calculate_weighted_score(row, text_params):
         
         if p in text_params:
             user_val = text_params[p]
-            if isinstance(user_val, (int, float)):
+            # Convert to numeric if possible (e.g. float or string number)
+            user_val_num = safe_int(user_val, None)
+            if user_val_num is not None:
                 dog_val = row[p]
                 if pd.isna(dog_val):
                     pct_match = 0.80
                 else:
-                    diff = abs(user_val - dog_val)
+                    diff = abs(user_val_num - dog_val)
                     pct_match = max(0, 1 - (diff / 4.0))
                 score += w_norm * pct_match
             else:
@@ -212,7 +225,9 @@ def recommend_dogs(selects, text_params, lang='he'):
         for p, v in text_params.items():
             if p in behavioral_cols:
                 idx = behavioral_cols.index(p)
-                user_vector[idx] = (v - 1) / 4.0
+                v_num = safe_int(v, None)
+                if v_num is not None:
+                    user_vector[idx] = (v_num - 1) / 4.0
         top_dogs = get_fallback_similar(user_vector, fallback_target_df, 5)
         dogs_list = []
         for _, d in top_dogs.iterrows():
@@ -234,7 +249,9 @@ def recommend_dogs(selects, text_params, lang='he'):
         for p, v in text_params.items():
             if p in behavioral_cols:
                 idx = behavioral_cols.index(p)
-                user_vector[idx] = (v - 1) / 4.0
+                v_num = safe_int(v, None)
+                if v_num is not None:
+                    user_vector[idx] = (v_num - 1) / 4.0
         similar_dogs = get_fallback_similar(user_vector, fallback_target_df, 10)
         existing_names = set(filtered_df['name'])
         
