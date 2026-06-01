@@ -62,6 +62,24 @@ def is_abusive_intent(text):
     return False
 
 
+def is_greeting_message(text):
+    if not text:
+        return False
+    clean_msg = text.strip().lower()
+    clean_msg_unpunct = re.sub(r'[^\w\s]', '', clean_msg).strip()
+    greetings = ["היי", "שלום", "אהלן", "בוקר טוב", "צהריים טובים", "ערב טוב", "hi", "hello", "hey", "howdy"]
+    words = clean_msg_unpunct.split()
+    
+    if clean_msg_unpunct in greetings:
+        return True
+    if len(words) <= 3 and any(w in greetings for w in words):
+        return True
+    if len(words) <= 4 and any(phrase in clean_msg_unpunct for phrase in ["רוצה לאמץ", "מעוניין לאמץ", "מעוניינת לאמץ", "מחפש כלב", "מחפשת כלב", "רוצה כלב", "want to adopt", "adopt a dog", "looking for a dog"]):
+        return True
+    return False
+
+
+
 @app.route('/')
 def index():
     return send_from_directory('static', 'index.html')
@@ -465,12 +483,22 @@ def chat():
                 "session_data": build_session_data()
             })
         else:
+            is_greeting = is_greeting_message(user_message)
             is_off_topic = False
-            nlp_result = analyze_user_input(user_message, session['text_params'], active_param=None, lang=lang)
-            if nlp_result.get("state") == "state_a":
-                is_off_topic = True
+            nlp_result = {}
+            if not is_greeting:
+                nlp_result = analyze_user_input(user_message, session['text_params'], active_param=None, lang=lang)
+                if nlp_result.get("state") == "state_a":
+                    # Fallback check
+                    clean_msg = user_message.strip().lower()
+                    clean_msg_unpunct = re.sub(r'[^\w\s]', '', clean_msg).strip()
+                    greetings = ["היי", "שלום", "אהלן", "בוקר טוב", "צהריים טובים", "ערב טוב", "hi", "hello", "hey", "howdy"]
+                    if clean_msg_unpunct in greetings or any(g in clean_msg_unpunct for g in greetings):
+                        is_greeting = True
+                    else:
+                        is_off_topic = True
             
-            if not is_off_topic and nlp_result.get("state") != "error" and nlp_result.get("extracted_parameters"):
+            if not is_off_topic and not is_greeting and nlp_result.get("state") != "error" and nlp_result.get("extracted_parameters"):
                 for k, v in nlp_result["extracted_parameters"].items():
                     session['text_params'][k] = v
             
@@ -489,25 +517,18 @@ def chat():
                     if lang == 'en' else
                     f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נתמקד בבחירת {param_name} הכלב:\n\n{next_q}"
                 )
+            elif is_greeting:
+                msg = (
+                    f"Great! Let's start the matching process:\n\n{next_q}"
+                    if lang == 'en' else
+                    f"בשמחה! בואו נתחיל בתהליך ההתאמה:\n\n{next_q}"
+                )
             else:
-                is_greeting = False
-                clean_msg = user_message.strip().lower()
-                greetings = ["היי", "שלום", "אהלן", "בוקר טוב", "צהריים טובים", "ערב טוב", "hi", "hello", "hey", "howdy"]
-                if clean_msg in greetings or any(g in clean_msg for g in ["רוצה לאמץ", "מעוניין לאמץ", "מחפש כלב", "רוצה כלב", "want to adopt", "adopt a dog", "looking for a dog"]):
-                    is_greeting = True
-                
-                if is_greeting:
-                    msg = (
-                        f"Great! Let's start the matching process:\n\n{next_q}"
-                        if lang == 'en' else
-                        f"בשמחה! בואו נתחיל בתהליך ההתאמה:\n\n{next_q}"
-                    )
-                else:
-                    msg = (
-                        f"Got it. Let's focus on selecting the dog's {param_name} to proceed:\n\n{next_q}"
-                        if lang == 'en' else
-                        f"הבנתי. בואו נתמקד בבחירת {param_name} הכלב כדי שנוכל להתקדם:\n\n{next_q}"
-                    )
+                msg = (
+                    f"Got it. Let's focus on selecting the dog's {param_name} to proceed:\n\n{next_q}"
+                    if lang == 'en' else
+                    f"הבנתי. בואו נתמקד בבחירת {param_name} הכלב כדי שנוכל להתקדם:\n\n{next_q}"
+                )
             
             return jsonify({
                 "response": msg,
@@ -534,6 +555,21 @@ def chat():
     
     active_param = missing_level_a[0] if missing_level_a else (missing_level_b[0] if missing_level_b else None)
     
+    is_greeting = is_greeting_message(user_message)
+    if is_greeting:
+        next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
+        session['state'] = next_state
+        msg = (
+            f"Great! Let's continue the matching process:\n\n{next_q}"
+            if lang == 'en' else
+            f"בשמחה! בואו נמשיך בתהליך ההתאמה:\n\n{next_q}"
+        )
+        return jsonify({
+            "response": msg,
+            "options": next_opts,
+            "session_data": build_session_data()
+        })
+
     nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang)
     
     if nlp_result.get("state") == "error":
@@ -557,6 +593,24 @@ def chat():
         })
 
     if state == "state_a":
+        # Fallback check
+        clean_msg = user_message.strip().lower()
+        clean_msg_unpunct = re.sub(r'[^\w\s]', '', clean_msg).strip()
+        greetings = ["היי", "שלום", "אהלן", "בוקר טוב", "צהריים טובים", "ערב טוב", "hi", "hello", "hey", "howdy"]
+        if clean_msg_unpunct in greetings or any(g in clean_msg_unpunct for g in greetings):
+            next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
+            session['state'] = next_state
+            msg = (
+                f"Great! Let's continue the matching process:\n\n{next_q}"
+                if lang == 'en' else
+                f"בשמחה! בואו נמשיך בתהליך ההתאמה:\n\n{next_q}"
+            )
+            return jsonify({
+                "response": msg,
+                "options": next_opts,
+                "session_data": build_session_data()
+            })
+
         next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
         msg = (
             f"I can only help with matching dogs for adoption. Let's get back to our matching:\n\n{next_q}"
