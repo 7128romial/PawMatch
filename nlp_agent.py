@@ -127,6 +127,84 @@ def analyze_user_input(user_text, current_params=None, active_param=None, lang='
 המשתמש נשאל כעת שאלה לגבי הפרמטר הפעיל הבא (active_param): {active_param}
 אם קלט המשתמש הנוכחי הוא קצר או ישיר (למשל: "כן", "לא", "יש", "אין", "אין לי", "לא אין") והוא עונה על השאלה לגבי {active_param}, אנא השתמש בחוקי שלב 3 ובמשמעות של {active_param} כדי לקבוע את הערך הנכון.
 
+# שלב 5: מילון סלנג ודוגמאות חילוץ (Few-Shot Examples & Slang Glossary)
+מילון ביטויים וסלנג עברי (Hebrew Slang & Idiom Glossary):
+- "קופסה" / "קופסת גפרורים" / "חור בקיר" / "דירונת" -> מפה ל-`a1_adapts_well_to_apartment_living: 5` (מתאים מאוד לדירה).
+- "וילה" / "אחוזה" / "שטח פתוח" / "משק" / "חצר ענקית" -> מפה ל-`a1_adapts_well_to_apartment_living: 1` (חצר גדולה).
+- "בטטת כורסה" / "עצלן" / "שונא לזוז" / "טיול קצר רק לפיפי" -> מפה ל-`e3_exercise_needs: 1` (רמת פעילות נמוכה מאוד).
+- "חולה ספורט" / "רץ מרתונים" / "טיולי שטח מטורפים" / "פעיל מאוד" -> מפה ל-`e3_exercise_needs: 5` (רמת פעילות גבוהה מאוד).
+- "בקושי בבית" / "מחוץ לבית 9 שעות" / "משרד" / "עובד מבוקר עד ערב" -> מפה ל-`a4_tolerates_being_alone: 5` (שעות לבד רבות).
+- "עובד מהבית" / "הכלב צמוד אליי" / "לא נפרדים" -> מפה ל-`a4_tolerates_being_alone: 1` (שעות לבד מועטות).
+
+דוגמאות חילוץ (Few-Shot Examples):
+
+דוגמה 1:
+קלט משתמש: "היי"
+היסטוריה: {}
+פלט מצופה (JSON בלבד):
+{
+  "state": "state_b",
+  "extracted_parameters": {}
+}
+
+דוגמה 2:
+קלט משתמש: "אני רוצה לאמץ כלב"
+היסטוריה: {}
+פלט מצופה (JSON בלבד):
+{
+  "state": "state_b",
+  "extracted_parameters": {}
+}
+
+דוגמה 3:
+קלט משתמש: "אני גרה בקופסה קטנה, ועובדת המון שעות מחוץ לבית מהבוקר עד הלילה"
+היסטוריה: {"size": "Small", "age_group": "Adult", "sex": "Male", "color": "Black"}
+פלט מצופה (JSON בלבד):
+{
+  "state": "state_c",
+  "extracted_parameters": {
+    "a1_adapts_well_to_apartment_living": 5,
+    "a4_tolerates_being_alone": 5
+  }
+}
+
+דוגמה 4:
+קלט משתמש: "אני רץ מרתונים ומחפש כלב ספורטיבי שירוץ איתי, ושיהיה קל לאילוף"
+היסטוריה: {"size": "Medium", "a1_adapts_well_to_apartment_living": 5}
+פלט מצופה (JSON בלבד):
+{
+  "state": "state_c",
+  "extracted_parameters": {
+    "e3_exercise_needs": 5,
+    "d1_easy_to_train": 5
+  }
+}
+
+דוגמה 5:
+קלט משתמש: "אין לי ילדים בכלל בבית, וגם אין חיות אחרות. אגב אני מגדל כלב בפעם הראשונה בחיי"
+היסטוריה: {"size": "Small", "a1_adapts_well_to_apartment_living": 5}
+פלט מצופה (JSON בלבד):
+{
+  "state": "state_c",
+  "extracted_parameters": {
+    "b2_incredibly_kid_friendly_dogs": 1,
+    "b3_dog_friendly": 1,
+    "a2_good_for_novice_owners": 5
+  }
+}
+
+דוגמה 6:
+קלט משתמש: "רעש בכלל לא מפריע לי אבל נשירה של שיער מפריעה לי מאוד כי יש לי אלרגיה"
+היסטוריה: {"size": "Small", "a1_adapts_well_to_apartment_living": 5, "e3_exercise_needs": 3, "a4_tolerates_being_alone": 2}
+פלט מצופה (JSON בלבד):
+{
+  "state": "state_c",
+  "extracted_parameters": {
+    "d5_tendency_to_bark_or_howl": 1,
+    "c1_amount_of_shedding": 1
+  }
+}
+
 פורמט הפלט (JSON בלבד):
 {
   "state": "state_b",
@@ -250,6 +328,84 @@ Please pay close attention to negations and implied meanings in the user's input
 # STEP 4: Handling short and partial answers (yes/no/have/don't have) based on the active parameter
 The user is currently being asked a question regarding the following active parameter (active_param): {active_param}
 If the user's current input is short or direct (e.g., "yes", "no", "have", "none", "don't have", "not really") and answers the question regarding {active_param}, please use the rules in STEP 3 and the meaning of {active_param} to determine the correct value.
+
+# STEP 5: Slang Glossary & Few-Shot Examples
+Slang & Idiom Glossary:
+- "box" / "matchbox" / "tiny room" -> map to `a1_adapts_well_to_apartment_living: 5` (adapts very well to apartment).
+- "villa" / "estate" / "ranch" / "huge yard" -> map to `a1_adapts_well_to_apartment_living: 1` (needs big yard).
+- "couch potato" / "lazy" / "couch dog" / "short walk only" -> map to `e3_exercise_needs: 1` (low exercise needs).
+- "marathon runner" / "very active" / "long hiking" -> map to `e3_exercise_needs: 5` (high exercise needs).
+- "barely home" / "out of home 9 hours" / "office work" -> map to `a4_tolerates_being_alone: 5` (high alone tolerance).
+- "work from home" / "wfh" / "always together" -> map to `a4_tolerates_being_alone: 1` (low alone tolerance).
+
+Few-Shot Examples:
+
+Example 1:
+User input: "hi"
+History: {}
+Expected output (JSON only):
+{
+  "state": "state_b",
+  "extracted_parameters": {}
+}
+
+Example 2:
+User input: "I want to adopt a dog"
+History: {}
+Expected output (JSON only):
+{
+  "state": "state_b",
+  "extracted_parameters": {}
+}
+
+Example 3:
+User input: "I live in a small matchbox, and work out of the house from morning to night"
+History: {"size": "Small", "age_group": "Adult", "sex": "Male", "color": "Black"}
+Expected output (JSON only):
+{
+  "state": "state_c",
+  "extracted_parameters": {
+    "a1_adapts_well_to_apartment_living": 5,
+    "a4_tolerates_being_alone": 5
+  }
+}
+
+Example 4:
+User input: "I run marathons and look for a sporty dog to run with me, and should be easy to train"
+History: {"size": "Medium", "a1_adapts_well_to_apartment_living": 5}
+Expected output (JSON only):
+{
+  "state": "state_c",
+  "extracted_parameters": {
+    "e3_exercise_needs": 5,
+    "d1_easy_to_train": 5
+  }
+}
+
+Example 5:
+User input: "No kids at home at all, and no other pets either. Also this is my first dog"
+History: {"size": "Small", "a1_adapts_well_to_apartment_living": 5}
+Expected output (JSON only):
+{
+  "state": "state_c",
+  "extracted_parameters": {
+    "b2_incredibly_kid_friendly_dogs": 1,
+    "b3_dog_friendly": 1,
+    "a2_good_for_novice_owners": 5
+  }
+}
+
+Example 6:
+User input: "Noise doesn't bother me at all but hair shedding is a big issue because of allergies"
+History: {"size": "Small", "a1_adapts_well_to_apartment_living": 5, "e3_exercise_needs": 3, "a4_tolerates_being_alone": 2}
+Expected output (JSON only):
+{
+  "state": "state_c",
+  "extracted_parameters": {
+    "d5_tendency_to_bark_or_howl": 1,
+    "c1_amount_of_shedding": 1
+  }
+}
 
 Output Format (strictly JSON only):
 {
