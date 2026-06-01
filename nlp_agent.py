@@ -274,7 +274,7 @@ Output Format (strictly JSON only):
             user_prompt = f"Data history so far (JSON): {json.dumps(current_params)}\n\nCurrent user input: '{user_text}'"
             
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt_final},
                 {"role": "user", "content": user_prompt}
@@ -336,7 +336,7 @@ Recommended dogs data: {json.dumps(dogs_info)}
         if client is None:
             raise Exception("OpenAI API key is missing or placeholder.")
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -372,7 +372,7 @@ def answer_breed_question(user_question, recommended_breeds=None, lang='he'):
         if client is None:
             raise Exception("OpenAI API key is missing or placeholder.")
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_question}
