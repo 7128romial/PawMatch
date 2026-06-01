@@ -189,6 +189,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isHtml) contentDiv.innerHTML = content;
         else contentDiv.textContent = content;
         msgDiv.appendChild(contentDiv);
+        
+        // Add feedback buttons for agent messages
+        if (sender === 'agent') {
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = 'message-feedback';
+            feedbackDiv.innerHTML = `
+                <button class="feedback-btn thumbs-up" title="${currentLang === 'he' ? 'מועיל' : 'Helpful'}"><i class="fa-regular fa-thumbs-up"></i></button>
+                <button class="feedback-btn thumbs-down" title="${currentLang === 'he' ? 'לא מועיל' : 'Not Helpful'}"><i class="fa-regular fa-thumbs-down"></i></button>
+            `;
+            
+            const upBtn = feedbackDiv.querySelector('.thumbs-up');
+            const downBtn = feedbackDiv.querySelector('.thumbs-down');
+            upBtn.addEventListener('click', () => window.handleFeedback(upBtn, 1));
+            downBtn.addEventListener('click', () => window.handleFeedback(downBtn, 0));
+            
+            msgDiv.appendChild(feedbackDiv);
+        }
+        
         chatMessages.appendChild(msgDiv);
         scrollToBottom();
         if (saveToStorage) {
@@ -352,6 +370,57 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage(trans.skipUserMessage, 'user');
         sendMessage("", true);
     });
+
+    // Feedback submission handler
+    window.handleFeedback = async function(btn, rating) {
+        const feedbackDiv = btn.parentElement;
+        const msgDiv = feedbackDiv.parentElement;
+        
+        // Find all messages up to this one to construct the chat log context
+        const allMessageDivs = Array.from(chatMessages.querySelectorAll('.message'));
+        const index = allMessageDivs.indexOf(msgDiv);
+        const contextMessages = [];
+        
+        for (let i = 0; i <= index; i++) {
+            const currentDiv = allMessageDivs[i];
+            const sender = currentDiv.classList.contains('user') ? 'user' : 'agent';
+            const contentDiv = currentDiv.querySelector('.message-content');
+            if (contentDiv) {
+                const contentText = contentDiv.innerText || contentDiv.textContent;
+                contextMessages.push({ sender, content: contentText.trim() });
+            }
+        }
+        
+        // Disable buttons in this container to prevent duplicate submissions
+        const buttons = feedbackDiv.querySelectorAll('.feedback-btn');
+        buttons.forEach(b => b.disabled = true);
+        
+        if (rating === 1) {
+            btn.classList.add('active-up');
+        } else {
+            btn.classList.add('active-down');
+        }
+        
+        try {
+            const savedSessionData = localStorage.getItem('pawmatch_session_data');
+            const sessionData = savedSessionData ? JSON.parse(savedSessionData) : null;
+            
+            const response = await fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rating: rating,
+                    chat_history: contextMessages,
+                    session_data: sessionData,
+                    lang: currentLang
+                })
+            });
+            const result = await response.json();
+            console.log("Feedback submitted successfully:", result);
+        } catch (error) {
+            console.error("Error submitting feedback:", error);
+        }
+    };
 
     // Start over global handler
     window.handleStartOver = async function() {

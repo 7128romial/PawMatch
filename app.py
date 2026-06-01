@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify, session, send_from_directory
 from dotenv import load_dotenv
 import os
 import re
+import json
+import time
 
 load_dotenv()
 
@@ -143,6 +145,33 @@ button_mappings = {
 @app.route('/api/reset', methods=['POST'])
 def reset():
     session.clear()
+    return jsonify({"status": "success"})
+
+@app.route('/api/feedback', methods=['POST'])
+def feedback():
+    data = request.json or {}
+    rating = data.get('rating') # 1 for thumbs up, 0 for thumbs down
+    chat_history = data.get('chat_history', [])
+    session_data = data.get('session_data', {})
+    lang = data.get('lang', 'he')
+    
+    log_entry = {
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "rating": rating,
+        "lang": lang,
+        "chat_history": chat_history,
+        "session_data": session_data
+    }
+    
+    try:
+        os.makedirs("data", exist_ok=True)
+        with open("data/feedback_logs.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        print(f"Logged feedback: rating={rating}")
+    except Exception as e:
+        print(f"Error logging feedback: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+        
     return jsonify({"status": "success"})
 
 def build_session_data():

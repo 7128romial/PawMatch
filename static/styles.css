@@ -553,3 +553,47 @@ input[type="text"]:focus { border-color: var(--accent); background: rgba(255, 25
         font-size: 0.85rem;
     }
 }
+
+.message-feedback {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
+    align-self: flex-start;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+html[dir="rtl"] .message-feedback {
+    align-self: flex-end;
+}
+.message-feedback:hover {
+    opacity: 1;
+}
+.feedback-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.feedback-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+.feedback-btn.active-up {
+    color: var(--success) !important;
+    background: rgba(16, 185, 129, 0.1);
+}
+.feedback-btn.active-down {
+    color: var(--danger) !important;
+    background: rgba(239, 68, 68, 0.1);
+}
+.feedback-btn:disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+}
