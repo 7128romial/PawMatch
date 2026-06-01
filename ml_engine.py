@@ -110,22 +110,23 @@ def apply_hard_filters(dogs_df, selects, text_params):
 
 def calculate_weighted_score(row, text_params):
     base_weights = {
-        'a1_adapts_well_to_apartment_living': 0.17,
-        'e3_exercise_needs': 0.15,
-        'a4_tolerates_being_alone': 0.12,
-        'd5_tendency_to_bark_or_howl': 0.10,
-        'c1_amount_of_shedding': 0.10,
+        'a1_adapts_well_to_apartment_living': 0.18,
+        'e3_exercise_needs': 0.16,
+        'a4_tolerates_being_alone': 0.13,
+        'd5_tendency_to_bark_or_howl': 0.11,
         'b3_dog_friendly': 0.09,
         'b2_incredibly_kid_friendly_dogs': 0.09,
         'd1_easy_to_train': 0.08,
+        'c1_amount_of_shedding': 0.08,
         'a2_good_for_novice_owners': 0.05,
-        'c2_drooling_potential': 0.05
+        'c2_drooling_potential': 0.03
     }
     
     level_a = {
         'a1_adapts_well_to_apartment_living',
         'e3_exercise_needs',
-        'a4_tolerates_being_alone'
+        'a4_tolerates_being_alone',
+        'd5_tendency_to_bark_or_howl'
     }
     
     # Identify active parameters for renormalization:
