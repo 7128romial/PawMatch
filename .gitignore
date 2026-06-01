@@ -4,4 +4,5 @@ __pycache__/
 .env
 .DS_Store
 data/feedback_logs.jsonl
-
+data/nlp_test_cases.csv
+data/nlp_benchmark_results.csv
