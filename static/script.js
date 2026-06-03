@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
             skipBtn: '<i class="fa-solid fa-forward"></i> <span class="btn-text">הצג תוצאות עכשיו</span>',
             placeholder: 'לדוגמה: אני גרה בדירה, רוב היום בעבודה...',
             langBtnText: '<i class="fa-solid fa-globe"></i> <span class="btn-text">English</span>',
-            welcome: 'שלום! אני הסוכן החכם של PawMatch. ספרו לי בטקסט חופשי על אורח החיים שלכם (סביבת מגורים, שעות לבד בבית, ילדים וכו\' וכו\') ואיזה כלב אתם מחפשים.',
+            welcome: 'שלום! אני הסוכן החכם של PawMatch. אני אעזור לכם למצוא את הכלב המושלם. בואו נתחיל: איזה גודל כלב אתם מחפשים?',
             
             // Results Hebrew
             perfectMatch: 'התאמה מושלמת!',
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             skipBtn: '<i class="fa-solid fa-forward"></i> <span class="btn-text">Show Results Now</span>',
             placeholder: 'For example: I live in an apartment, most of the day at work...',
             langBtnText: '<i class="fa-solid fa-globe"></i> <span class="btn-text">עברית</span>',
-            welcome: 'Hello! I am the PawMatch Smart Agent. Tell me in free text about your lifestyle (living environment, hours alone at home, kids, etc.) and what kind of dog you are looking for.',
+            welcome: 'Hello! I am the PawMatch Smart Agent. I will help you find the perfect dog. Let\'s start: What size dog are you looking for?',
             
             // Results English
             perfectMatch: 'Perfect Match!',
