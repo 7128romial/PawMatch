@@ -273,10 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
-        // Highlight disclaimer if partial match with low info
-        if (!data.score) {
-            document.getElementById('disclaimer-card').classList.add('low-confidence');
-        }
         return html;
     }
 
