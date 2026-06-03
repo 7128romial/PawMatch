@@ -211,73 +211,28 @@ def recommend_dogs(selects, text_params, lang='he'):
         scores.append(calculate_weighted_score(row, text_params))
         
     filtered_df['match_score'] = scores
+    
+    # Apply strict 75% threshold
+    filtered_df = filtered_df[filtered_df['match_score'] >= 75]
     filtered_df = filtered_df.sort_values('match_score', ascending=False)
     
-    # If the user specified a breed and we have that breed, fall back within that breed.
-    # Otherwise, fall back on the entire database.
-    fallback_target_df = df_final
-    if breed_preference and not breed_not_found:
-        fallback_target_df = df_final[df_final['breed'] == breed_preference]
-        
     if len(filtered_df) == 0:
-        # Cosine similarity fallback
-        user_vector = np.full(len(behavioral_cols), 0.5)
-        for p, v in text_params.items():
-            if p in behavioral_cols:
-                idx = behavioral_cols.index(p)
-                v_num = safe_int(v, None)
-                if v_num is not None:
-                    user_vector[idx] = (v_num - 1) / 4.0
-        top_dogs = get_fallback_similar(user_vector, fallback_target_df, 3)
-        dogs_list = []
-        for _, d in top_dogs.iterrows():
-            d_dict = d.to_dict()
-            d_dict['match_score'] = 70
-            dogs_list.append(clean_dict(d_dict))
-            
-        msg = "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל."
-        if breed_not_found:
-            msg = f"לא מצאנו כלבי {breed_preference} כרגע במאגר לאימוץ, אך הנה הכלבים הדומים ביותר שיכולים להתאים לכם." if lang == 'he' else f"We couldn't find any {breed_preference} dogs available for adoption right now, but here are the most similar dogs matching your profile."
-        elif breed_preference:
-            msg = f"לא נמצאה התאמה מושלמת עבור {breed_preference}, אך הנה הכלבים הדומים ביותר מהגזע הזה." if lang == 'he' else f"No perfect match found for {breed_preference}, but here are the most similar dogs of this breed."
-            
-        return {"type": "result", "dogs": dogs_list, "message": msg}
+        msg = ("אנחנו מצטערים, אבל כרגע אין לנו כלבים במאגר שפוגשים את הדרישות שלך בהתאמה מספקת (מעל 75%). "
+               "נשמח לעזור אם משהו ישתנה בעתיד, תחזרו אלינו!") if lang == 'he' else \
+              ("We are sorry, but currently we have no dogs in our database that meet your requirements with a high enough match (>75%). "
+               "We'd be happy to help if anything changes in the future, please come back!")
+        return {"type": "result", "dogs": [], "message": msg}
 
-    # If we have less than 3, pad with cosine fallback from the fallback target
-    if len(filtered_df) < 3:
-        user_vector = np.full(len(behavioral_cols), 0.5)
-        for p, v in text_params.items():
-            if p in behavioral_cols:
-                idx = behavioral_cols.index(p)
-                v_num = safe_int(v, None)
-                if v_num is not None:
-                    user_vector[idx] = (v_num - 1) / 4.0
-        similar_dogs = get_fallback_similar(user_vector, fallback_target_df, 10)
-        existing_names = set(filtered_df['name'])
-        
-        # Standardize matching columns
-        padded_rows = []
-        for _, d in similar_dogs.iterrows():
-            if len(filtered_df) + len(padded_rows) >= 3:
-                break
-            if d['name'] not in existing_names:
-                d_dict = d.to_dict()
-                d_dict['match_score'] = 65
-                padded_rows.append(d_dict)
-        if padded_rows:
-            cleaned_padded = [clean_dict(row) for row in padded_rows]
-            filtered_df = pd.concat([filtered_df, pd.DataFrame(cleaned_padded)], ignore_index=True)
-
-    # Always take top 3
+    # Take top 3
     top_3 = filtered_df.head(3)
     dogs_list = []
     for _, d in top_3.iterrows():
         d_dict = d.to_dict()
-        d_dict['match_score'] = int(round(d['match_score'])) if pd.notna(d['match_score']) else 70
+        d_dict['match_score'] = int(round(d['match_score']))
         dogs_list.append(clean_dict(d_dict))
         
     msg = None
     if breed_not_found:
-        msg = f"לא מצאנו כלבי {breed_preference} כרגע במאגר לאימוץ, אך הנה הכלבים הדומים ביותר שיכולים להתאים לכם." if lang == 'he' else f"We couldn't find any {breed_preference} dogs available for adoption right now, but here are the most similar dogs matching your profile."
+        msg = f"לא מצאנו כלבי {breed_preference} כרגע במאגר לאימוץ, אך מצאנו את הכלבים הבאים שמתאימים לכם." if lang == 'he' else f"We couldn't find any {breed_preference} dogs available for adoption right now, but we found these great matches."
         
     return {"type": "result", "dogs": dogs_list, "message": msg}
