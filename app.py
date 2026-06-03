@@ -612,6 +612,7 @@ def chat():
         
     state = nlp_result.get('state')
     extracted = nlp_result.get('extracted_parameters', {})
+    next_question_from_llm = nlp_result.get('next_question', '')
     
     if state == "state_e":
         msg = ("Adopting a dog is a significant and long-term responsibility (10-15 years) and is not recommended solely out of boredom or as a temporary solution. "
@@ -643,7 +644,7 @@ def chat():
             })
 
         next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
-        msg = (
+        msg = next_question_from_llm if next_question_from_llm else (
             f"I can only help with matching dogs for adoption. Let's get back to our matching:\n\n{next_q}"
             if lang == 'en' else
             f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נחזור להתאמה שלנו:\n\n{next_q}"
@@ -669,8 +670,9 @@ def chat():
     if next_state == 'state_q':
         return process_recommendation(selects, session['text_params'])
     else:
+        response_text = next_question_from_llm if next_question_from_llm else next_q
         return jsonify({
-            "response": next_q,
+            "response": response_text,
             "options": next_opts,
             "session_data": build_session_data()
         })
