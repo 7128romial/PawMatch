@@ -153,11 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 content: contentDiv.innerHTML
             });
         });
-        localStorage.setItem('pawmatch_chat_history', JSON.stringify(messages));
+        sessionStorage.setItem('pawmatch_chat_history', JSON.stringify(messages));
     }
 
     function loadChatHistory() {
-        const saved = localStorage.getItem('pawmatch_chat_history');
+        const saved = sessionStorage.getItem('pawmatch_chat_history');
         if (saved) {
             try {
                 const messages = JSON.parse(saved);
@@ -178,6 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Error loading chat history:", e);
             }
         }
+        
+        // If there's no saved history (e.g. new tab or window), reset the backend session to ensure a completely clean start
+        fetch('/api/reset', { method: 'POST' }).catch(e => console.error("Error resetting session:", e));
+        
         updateUIStrings();
     }
 
@@ -292,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         skipBtn.style.display = 'block'; // Show skip button after first interaction
 
         try {
-            const savedSessionData = localStorage.getItem('pawmatch_session_data');
+            const savedSessionData = sessionStorage.getItem('pawmatch_session_data');
             const sessionData = savedSessionData ? JSON.parse(savedSessionData) : null;
 
             const endpoint = isButton ? '/api/button_click' : '/api/chat';
@@ -310,9 +314,9 @@ document.addEventListener('DOMContentLoaded', () => {
             removeTypingIndicator();
 
             if (data.session_data && Object.keys(data.session_data).length > 0) {
-                localStorage.setItem('pawmatch_session_data', JSON.stringify(data.session_data));
+                sessionStorage.setItem('pawmatch_session_data', JSON.stringify(data.session_data));
             } else {
-                localStorage.removeItem('pawmatch_session_data');
+                sessionStorage.removeItem('pawmatch_session_data');
             }
 
             if (data.type === 'result') {
@@ -402,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
-            const savedSessionData = localStorage.getItem('pawmatch_session_data');
+            const savedSessionData = sessionStorage.getItem('pawmatch_session_data');
             const sessionData = savedSessionData ? JSON.parse(savedSessionData) : null;
             
             const response = await fetch('/api/feedback', {
@@ -424,8 +428,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start over global handler
     window.handleStartOver = async function() {
-        localStorage.removeItem('pawmatch_chat_history');
-        localStorage.removeItem('pawmatch_session_data');
+        sessionStorage.removeItem('pawmatch_chat_history');
+        sessionStorage.removeItem('pawmatch_session_data');
         try {
             await fetch('/api/reset', { method: 'POST' });
         } catch (e) {
