@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
-    const skipBtn = document.getElementById('skip-btn');
     const langToggleBtn = document.getElementById('lang-toggle-btn');
     
     let currentLang = localStorage.getItem('pawmatch_lang') || 'he'; // Persisted language preference
@@ -17,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
             associationsTitle: '<i class="fa-solid fa-hand-holding-heart"></i> עמותות שותפות',
             agentName: 'הסוכן החכם של PawMatch',
             statusText: 'מחובר',
-            skipBtn: '<i class="fa-solid fa-forward"></i> <span class="btn-text">הצג תוצאות עכשיו</span>',
             placeholder: 'לדוגמה: אני גרה בדירה, רוב היום בעבודה...',
             langBtnText: '<i class="fa-solid fa-globe"></i> <span class="btn-text">English</span>',
             welcome: 'שלום! אני הסוכן החכם של PawMatch. אני אעזור לכם למצוא את הכלב המושלם. בואו נתחיל: איזה גודל כלב אתם מחפשים?',
@@ -46,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
             associationsTitle: '<i class="fa-solid fa-hand-holding-heart"></i> Partner Associations',
             agentName: 'PawMatch Smart Agent',
             statusText: 'Connected',
-            skipBtn: '<i class="fa-solid fa-forward"></i> <span class="btn-text">Show Results Now</span>',
             placeholder: 'For example: I live in an apartment, most of the day at work...',
             langBtnText: '<i class="fa-solid fa-globe"></i> <span class="btn-text">עברית</span>',
             welcome: 'Hello! I am the PawMatch Smart Agent. I will help you find the perfect dog. Let\'s start: What size dog are you looking for?',
@@ -121,8 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.agent-info h2').textContent = trans.agentName;
         document.querySelector('.status-text').textContent = trans.statusText;
         
-        // Skip, Reset and Lang Toggle Buttons
-        skipBtn.innerHTML = trans.skipBtn;
+        // Reset and Lang Toggle Buttons
         langToggleBtn.innerHTML = trans.langBtnText;
         const resetBtn = document.getElementById('reset-btn');
         if (resetBtn) {
@@ -173,12 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     messages.forEach(msg => {
                         addMessage(msg.content, msg.sender, true, false);
                     });
-                    const hasResult = messages.some(msg => msg.content.includes('results-container') || msg.content.includes('dog-card'));
-                    if (hasResult) {
-                        skipBtn.style.display = 'none';
-                    } else {
-                        skipBtn.style.display = 'block';
-                    }
                     return;
                 }
             } catch (e) {
@@ -300,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         addTypingIndicator();
-        skipBtn.style.display = 'block'; // Show skip button after first interaction
 
         try {
             const savedSessionData = sessionStorage.getItem('pawmatch_session_data');
@@ -327,7 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (data.type === 'result') {
-                skipBtn.style.display = 'none';
                 addMessage(renderResults(data), 'agent', true);
             } else {
                 let responseHtml = data.response;
@@ -375,11 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', () => sendMessage(userInput.value.trim()));
     userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage(userInput.value.trim());
-    });
-    skipBtn.addEventListener('click', () => {
-        const trans = uiStrings[currentLang];
-        addMessage(trans.skipUserMessage, 'user');
-        sendMessage("", true);
     });
 
     // Feedback submission handler
