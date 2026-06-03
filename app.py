@@ -362,6 +362,9 @@ def get_missing_critical(params):
 def chat():
     data = request.json or {}
     user_message = data.get('message', data.get('selection', ''))
+    if user_message and len(user_message) > 500:
+        user_message = user_message[:500]
+        
     selects = data.get('selects', {})
     skip_to_results = data.get('skip', False)
     lang = data.get('lang', 'he')

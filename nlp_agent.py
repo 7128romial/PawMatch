@@ -151,7 +151,13 @@ You MUST use the `extract_dog_preferences` tool.
             tool_choice={"type": "function", "function": {"name": "extract_dog_preferences"}},
             temperature=0.0
         )
-        
+        if not response.choices[0].message.tool_calls:
+            return {
+                "state": "state_b",
+                "extracted_parameters": {},
+                "next_question": "אני מצטער, לא הצלחתי להבין את הפנייה. תוכל/י לנסח אותה אחרת?" if lang == 'he' else "I'm sorry, I couldn't understand that. Could you rephrase?"
+            }
+            
         tool_call = response.choices[0].message.tool_calls[0]
         arguments = tool_call.function.arguments
         result = json.loads(arguments)
