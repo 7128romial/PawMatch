@@ -135,7 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update first welcome message if chat has only the welcome message
         const messages = chatMessages.querySelectorAll('.message');
         if (messages.length === 1 && messages[0].classList.contains('agent')) {
-            messages[0].querySelector('.message-content').textContent = trans.welcome;
+            const opts = currentLang === 'he' ? ["קטן", "בינוני", "גדול", "אין לי העדפה"] : ["Small", "Medium", "Large", "No Preference"];
+            let html = trans.welcome;
+            html += '<div class="chat-buttons">';
+            opts.forEach(opt => {
+                html += `<button class="chat-btn" onclick="window.handleChatBtn('${opt}')">${opt}</button>`;
+            });
+            html += '</div>';
+            messages[0].querySelector('.message-content').innerHTML = html;
         }
     }
 
