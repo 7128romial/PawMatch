@@ -33,7 +33,7 @@ behavioral_cols = [
 df_final = None
 df_numerical_scaled = None
 scaler = MinMaxScaler()
-kmeans_model = KMeans(n_clusters=4, random_state=42)
+kmeans_model = KMeans(n_clusters=6, random_state=42)
 
 def load_data():
     global df_final, df_numerical_scaled, scaler, kmeans_model
@@ -41,6 +41,7 @@ def load_data():
         df_final = pd.read_csv("data/dogs_final.csv")
         df_numerical_scaled = pd.DataFrame(scaler.fit_transform(df_final[numerical_cols]), columns=numerical_cols, index=df_final.index)
         kmeans_model.fit(df_numerical_scaled)
+        df_final['cluster'] = kmeans_model.labels_
     except FileNotFoundError:
         print("Error: data/dogs_final.csv not found.")
     except Exception as e:

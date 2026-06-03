@@ -37,7 +37,8 @@ def preprocess():
     mismatches = {
         "german shepherd": "german shepherd dog",
         "shetland sheepdog": "shetland sheepdog",
-        "miniature schnauzer": "miniature schnauzer"
+        "miniature schnauzer": "miniature schnauzer",
+        "schnauzer": "standard schnauzer"
     }
     dogs_df['join_breed'] = dogs_df['join_breed'].replace(mismatches)
     
@@ -54,8 +55,8 @@ def preprocess():
     print(f"Total rows after dropping missing behavioral traits: {len(merged_df)}")
     
     # Drop duplicates
-    merged_df = merged_df.drop_duplicates()
-    merged_df = merged_df.reset_index(drop=True)
+    # merged_df = merged_df.drop_duplicates()
+    # merged_df = merged_df.reset_index(drop=True)
     print(f"Total rows after dropping duplicates: {len(merged_df)}")
     
     # Parse life span min/max
