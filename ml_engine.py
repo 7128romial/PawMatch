@@ -228,7 +228,7 @@ def recommend_dogs(selects, text_params, lang='he'):
                 v_num = safe_int(v, None)
                 if v_num is not None:
                     user_vector[idx] = (v_num - 1) / 4.0
-        top_dogs = get_fallback_similar(user_vector, fallback_target_df, 5)
+        top_dogs = get_fallback_similar(user_vector, fallback_target_df, 3)
         dogs_list = []
         for _, d in top_dogs.iterrows():
             d_dict = d.to_dict()
@@ -243,8 +243,8 @@ def recommend_dogs(selects, text_params, lang='he'):
             
         return {"type": "result", "dogs": dogs_list, "message": msg}
 
-    # If we have less than 5, pad with cosine fallback from the fallback target
-    if len(filtered_df) < 5:
+    # If we have less than 3, pad with cosine fallback from the fallback target
+    if len(filtered_df) < 3:
         user_vector = np.full(len(behavioral_cols), 0.5)
         for p, v in text_params.items():
             if p in behavioral_cols:
@@ -258,7 +258,7 @@ def recommend_dogs(selects, text_params, lang='he'):
         # Standardize matching columns
         padded_rows = []
         for _, d in similar_dogs.iterrows():
-            if len(filtered_df) + len(padded_rows) >= 5:
+            if len(filtered_df) + len(padded_rows) >= 3:
                 break
             if d['name'] not in existing_names:
                 d_dict = d.to_dict()
@@ -268,10 +268,10 @@ def recommend_dogs(selects, text_params, lang='he'):
             cleaned_padded = [clean_dict(row) for row in padded_rows]
             filtered_df = pd.concat([filtered_df, pd.DataFrame(cleaned_padded)], ignore_index=True)
 
-    # Always take top 5
-    top_5 = filtered_df.head(5)
+    # Always take top 3
+    top_3 = filtered_df.head(3)
     dogs_list = []
-    for _, d in top_5.iterrows():
+    for _, d in top_3.iterrows():
         d_dict = d.to_dict()
         d_dict['match_score'] = int(round(d['match_score'])) if pd.notna(d['match_score']) else 70
         dogs_list.append(clean_dict(d_dict))
