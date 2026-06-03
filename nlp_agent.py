@@ -163,11 +163,25 @@ You MUST use the `extract_dog_preferences` tool.
         }
 
 def generate_explanations(dogs, user_params, lang='he'):
+    # Load scraped breed descriptions
+    breed_desc_map = {}
+    desc_path = os.path.join("data", "breed_descriptions.json")
+    if os.path.exists(desc_path):
+        try:
+            with open(desc_path, 'r', encoding='utf-8') as f:
+                breed_desc_map = json.load(f)
+        except Exception:
+            pass
+
     dogs_info = []
     for d in dogs:
+        breed_key = str(d.get("breed", "")).lower().strip()
+        breed_desc = breed_desc_map.get(breed_key, "Description not available.")
+        
         dogs_info.append({
             "name": d.get("name"),
             "breed": d.get("breed"),
+            "breed_description": breed_desc,
             "match_score": d.get("match_score"),
             "cluster": d.get("cluster"),
             "sex": d.get("sex"),
@@ -200,7 +214,7 @@ Output JSON structure:
     {{
       "name": "Dog_Name",
       "match_reason": "A 1-2 sentence explanation of why this specific dog is a match for the user's parameters and their behavior cluster.",
-      "breed_info": "A 1-2 sentence description of the breed's general temperament, origins, and key characteristics."
+      "breed_info": "A 1-2 sentence description of the breed's general temperament, origins, and key characteristics. IMPORTANT: You MUST base this strictly on the 'breed_description' field provided for each dog. Do NOT invent facts. Also, you MUST explicitly mention in your explanation that this breed information is sourced from DogTime.com."
     }}
   ]
 }}

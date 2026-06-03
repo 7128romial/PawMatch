@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
             associationsTitle: '<i class="fa-solid fa-hand-holding-heart"></i> עמותות שותפות',
             agentName: 'הסוכן החכם של PawMatch',
             statusText: 'מחובר',
-            placeholder: 'לדוגמה: אני גרה בדירה, רוב היום בעבודה...',
+            placeholder: 'הקלד/י הודעה...',
             langBtnText: '<i class="fa-solid fa-globe"></i> <span class="btn-text">English</span>',
             welcome: 'שלום! אני הסוכן החכם של PawMatch. אני אעזור לכם למצוא את הכלב המושלם. בואו נתחיל: איזה גודל כלב אתם מחפשים?',
             
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             associationsTitle: '<i class="fa-solid fa-hand-holding-heart"></i> Partner Associations',
             agentName: 'PawMatch Smart Agent',
             statusText: 'Connected',
-            placeholder: 'For example: I live in an apartment, most of the day at work...',
+            placeholder: 'Type a message...',
             langBtnText: '<i class="fa-solid fa-globe"></i> <span class="btn-text">עברית</span>',
             welcome: 'Hello! I am the PawMatch Smart Agent. I will help you find the perfect dog. Let\'s start: What size dog are you looking for?',
             
