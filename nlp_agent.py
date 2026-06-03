@@ -9,7 +9,7 @@ if api_key and api_key != "your_api_key_here":
 else:
     client = None
 
-def analyze_user_input(user_text, current_params=None, active_param=None, lang='he'):
+def analyze_user_input(user_text, current_params=None, active_param=None, lang='he', retry_count=0):
     if current_params is None:
         current_params = {}
         
@@ -70,10 +70,13 @@ If the user reveals any of the following "Red Flags", immediately refuse to cont
 - Acute Personal Crisis: Expressing suicidal ideation or severe self-harm. (Halt immediately, drop the matchmaking context entirely, and provide official local emotional support hotline information).
 
 # Edge Cases & Outlier Scenarios
-- Short/Ambiguous Answers: When a user replies with a short number or time (e.g., "2 hours", "9"), you MUST look at the "Currently asked parameter (Active Parameter)". If it's `a4_tolerates_being_alone`, the number represents time left alone. If it's `e3_exercise_needs`, it represents exercise time. Do NOT misclassify short answers.
-- Contradictions: If a user presents conflicting data (e.g., "I live in a tiny studio apartment" + "I want a giant, highly active working dog"), note the friction gently without blame: "I noticed a potential contrast: a smaller apartment combined with a very large, active dog profile. Should we look for large dogs that adapt surprisingly well to apartments, or adjust the size filter?"
-- Specific Breed Request Override: If a user specifies a breed that violates their hard UI filters (e.g., wanting a Golden Retriever but physical filter is set to 'Small'), extract the behavioral vector of the requested breed (e.g., high exercise, family friendly) and explain that you are matching them to the closest behavioral alternative within their physical filter constraints (e.g., a small dog from the 'family_active' cluster).
-- Out-of-Scope Topics: E.g., Cats, Dog food. Refuse politely and steer back. (Map to state: state_a)
+- Evasive or Vague Answers: If the user answers "I don't know", "doesn't matter", "you decide", or a bare "yes"/"no" without detail for an essential Tier A trait (which is currently the Active Parameter):
+  * If `retry_count == 0`: You MUST formulate `next_question` to ask about the active parameter again, but using DIFFERENT, simpler wording. Do not extract any value yet.
+  * If `retry_count >= 1` (meaning the user dodged again): You MUST extract a neutral value of `3` for that Active Parameter and move on to the next missing parameter.
+- Short/Ambiguous Answers: When a user replies with a short number or time (e.g., "2 hours", "9"), look at the Active Parameter. If it's a4_tolerates_being_alone, the number represents time left alone. If it's e3_exercise_needs, it represents exercise time. Do NOT misclassify short answers.
+- Contradictions: If a user presents conflicting data, note the friction gently without blame.
+- Specific Breed Request Override: If a user specifies a breed that violates their hard UI filters, extract the behavioral vector of the requested breed and explain you are matching the closest behavioral alternative.
+- Out-of-Scope Topics: Refuse politely and steer back. (Map to state: state_a)
 
 # Language, Tone, and Output Presentation
 - Language: Complete the entire conversation in natural, fluent, and warm {{"Hebrew (עברית)" if lang == 'he' else "English"}}. Avoid automated, artificial phrasing.
@@ -141,7 +144,15 @@ You MUST use the `extract_dog_preferences` tool.
         if client is None:
             raise Exception("OpenAI API key is missing or placeholder.")
             
-        user_prompt = f"Data collected so far: {json.dumps(current_params)}\nCurrently asked parameter (Active Parameter): {active_param}\nCurrent user input: '{user_text}'"
+        user_prompt = f"""
+# Dynamic Context
+You have already collected the following data points (if any):
+{json.dumps(current_params, ensure_ascii=False, indent=2)}
+
+Currently asked parameter (Active Parameter): {active_param}
+Retry count for Active Parameter: {retry_count} (0 = first time asking, 1+ = user dodged/was vague previously)
+
+Current user input: '{user_text}'"""
             
         response = client.chat.completions.create(
             model="gpt-5.4",

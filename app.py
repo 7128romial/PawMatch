@@ -604,7 +604,8 @@ def chat():
             "session_data": build_session_data()
         })
 
-    nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang)
+    retry_count = session.get('param_retry_count', 0)
+    nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang, retry_count=retry_count)
     
     if nlp_result.get("state") == "error":
         err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
@@ -662,7 +663,16 @@ def chat():
     if extracted:
         for k, v in extracted.items():
             session['text_params'][k] = v
-        
+            
+    # Retry tracking for the active parameter
+    if active_param:
+        if active_param in session['text_params']:
+            session['param_retry_count'] = 0
+            val = session['text_params'][active_param]
+            session['confidence_penalty'] = session.get('confidence_penalty', False) or (val == 3 and retry_count >= 1) # Track medium confidence
+        else:
+            session['param_retry_count'] = retry_count + 1
+
     if current_session_state == 'step_2_welcome':
         session['text_params']['welcome_done'] = True
     elif current_session_state == 'step_5_soft':
@@ -741,9 +751,12 @@ def process_recommendation(selects, text_params):
         session['last_asked_param'] = None
         session['param_retry_count'] = 0
         
+        confidence_level = "Medium" if session.get('confidence_penalty') else "High"
+        
         response_payload = {
             "type": "result",
             "match_type": rec["type"],
+            "confidence_level": confidence_level,
             "dogs": dogs,
             "score": score_val,
             "session_data": {
@@ -757,10 +770,15 @@ def process_recommendation(selects, text_params):
             }
         }
         
-        if "message" in rec:
-            msg = rec["message"]
-            if lang == 'en' and msg == "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל.":
-                msg = "No direct match found. Here are the dogs most similar to your profile."
+        msg = rec.get("message", "")
+        if lang == 'en' and msg == "לא נמצאה התאמה ישירה. הנה הכלבים הדומים ביותר לפרופיל.":
+            msg = "No direct match found. Here are the dogs most similar to your profile."
+            
+        if confidence_level == "Medium":
+            warning_text = "הערה: חלק מהנתונים חסרים, לכן ההמלצה היא ברמת ביטחון בינונית." if lang == 'he' else "Note: Some data is missing, so this recommendation is at Medium Confidence."
+            msg = f"{msg}\n\n{warning_text}" if msg else warning_text
+            
+        if msg:
             response_payload["message"] = msg
             
         return jsonify(response_payload)
