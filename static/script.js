@@ -229,6 +229,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (indicator) indicator.remove();
     }
     
+    async function fetchDogImage(breed, imgElement) {
+        try {
+            const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(breed)}&prop=pageimages&format=json&pithumbsize=300&origin=*`);
+            const data = await response.json();
+            const pages = data.query.pages;
+            const pageId = Object.keys(pages)[0];
+            if (pageId !== "-1" && pages[pageId].thumbnail) {
+                imgElement.src = pages[pageId].thumbnail.source;
+                imgElement.style.display = 'block';
+            }
+        } catch (e) {
+            console.error('Failed to fetch image for', breed);
+        }
+    }
+
     function renderResults(data) {
         let html = '';
         const trans = uiStrings[currentLang];
@@ -248,9 +263,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
                 <div class="dog-card premium-card">
                     <div class="dog-card-header">
-                        <h4>${dog.name || 'Dog'} (${dog.breed})</h4>
+                        <h4>${dog.breed}</h4>
                         <div class="score-badge-card">${dog.match_score ? dog.match_score + '%' : trans.alternative}</div>
                     </div>
+                    <img class="dog-breed-img" data-breed="${dog.breed}" src="" style="display:none; width:100%; max-height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;" alt="${dog.breed}">
                     <div class="dog-specs">
                         <span><i class="fa-solid fa-cake-candles"></i> ${trans.ageLabel}: ${dog.age_years} ${trans.years}</span>
                         <span><i class="fa-solid fa-weight-scale"></i> ${trans.weightLabel}: ${dog.weight_kg} ${trans.kg}</span>
@@ -313,6 +329,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.type === 'result') {
                 addMessage(renderResults(data), 'agent', true);
+                
+                // Fetch images dynamically
+                setTimeout(() => {
+                    document.querySelectorAll('.dog-breed-img').forEach(img => {
+                        if (!img.dataset.loaded) {
+                            img.dataset.loaded = 'true';
+                            fetchDogImage(img.dataset.breed, img);
+                        }
+                    });
+                }, 100);
             } else {
                 let responseHtml = data.response;
                 if (data.options) {

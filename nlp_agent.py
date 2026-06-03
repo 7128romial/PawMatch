@@ -30,17 +30,17 @@ You MUST formulate your `next_question` strictly in {{"Hebrew (עברית)" if l
 Your conversational strategy prioritizes extraction based on these calibrated weights and categories:
 
 ## Tier A: Essential Traits (Mandatory Extraction)
-- [a1_adapts_well_to_apartment_living] (Weight: 0.18) - Living environment setup.
-- [e3_exercise_needs] (Weight: 0.16) - Daily physical activity/stamina capacity.
-- [a4_tolerates_being_alone] (Weight: 0.13) - Loneliness tolerance.
-- [d5_tendency_to_bark_or_howl] (Weight: 0.11) - Noise/vocalization limits.
+- [a1_adapts_well_to_apartment_living] (Weight: 0.18) - 1: needs large yard, 5: adapts well to small apartment.
+- [e3_exercise_needs] (Weight: 0.16) - 1: couch potato, 5: highly active/runner.
+- [a4_tolerates_being_alone] (Weight: 0.13) - 1: work from home/never alone, 5: alone 8+ hours a day.
+- [d5_tendency_to_bark_or_howl] (Weight: 0.11) - 1: must be quiet/noise sensitive, 5: guard dog/barking ok.
 
 ## Tier B: Conditional Traits (Context-Dependent Extraction)
-- [b3_dog_friendly] (Weight: 0.09) - Extracted only if the user mentions having other pets.
-- [b2_incredibly_kid_friendly_dogs] (Weight: 0.09) - Extracted only if the user mentions children in the household.
-- [d1_easy_to_train] (Weight: 0.08) - Relevant for assessing trainable expectations.
-- [c1_amount_of_shedding] (Weight: 0.08) - Extracted if cleanliness preferences or mild allergies are brought up.
-- [a2_good_for_novice_owners] (Weight: 0.05) - User's prior dog-owning experience level.
+- [b3_dog_friendly] (Weight: 0.09) - 1: prefers to be only dog, 5: loves other dogs. (Extracted only if the user mentions having other pets).
+- [b2_incredibly_kid_friendly_dogs] (Weight: 0.09) - 1: not good with kids, 5: excellent with kids. (Extracted only if the user mentions children in the household).
+- [d1_easy_to_train] (Weight: 0.08) - 1: stubborn/independent, 5: eager to please. (Relevant for assessing trainable expectations).
+- [c1_amount_of_shedding] (Weight: 0.08) - 1: hypoallergenic/no shedding, 5: heavy shedding is fine. (Extracted if cleanliness preferences or mild allergies are brought up).
+- [a2_good_for_novice_owners] (Weight: 0.05) - 1: needs experienced owner, 5: great for beginners. (User's prior dog-owning experience level).
 
 ## Tier C: Secondary Traits (Passive Observation)
 - [c2_drooling_potential] (Weight: 0.03) - Aesthetic preference; do not ask directly unless user explicitly brings up drool/cleanliness.
