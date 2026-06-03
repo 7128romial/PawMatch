@@ -659,8 +659,9 @@ def chat():
         })
         
     # Merge extracted parameters
-    for k, v in extracted.items():
-        session['text_params'][k] = v
+    if extracted:
+        for k, v in extracted.items():
+            session['text_params'][k] = v
         
     if current_session_state == 'step_2_welcome':
         session['text_params']['welcome_done'] = True
