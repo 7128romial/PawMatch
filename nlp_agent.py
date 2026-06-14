@@ -260,6 +260,7 @@ Output JSON structure:
 {{
   "explanations": [
     {{
+      "breed": "Breed_Name",
       "name": "Dog_Name",
       "match_reason": "A 1-2 sentence explanation of why this specific dog is a match for the user's parameters and their behavior cluster.",
       "breed_info": "A 1-2 sentence description of the breed's general temperament, origins, and key characteristics. IMPORTANT: You MUST base this strictly on the 'breed_description' field provided for each dog. Do NOT invent facts. Also, you MUST explicitly mention in your explanation that this breed information is sourced from DogTime.com."
