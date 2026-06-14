@@ -168,13 +168,9 @@ def build_combined_level_a_question(missing_keys, lang='he'):
             'c1_amount_of_shedding': "האם נשירת פרווה/אלרגיות מהוות שיקול עבורכם"
         }
         parts = [phrases[k] for k in missing_keys if k in phrases]
-        if len(parts) == 1:
+        if parts:
             return f"כדי לדייק בהתאמה, ספרו לי קצת על {parts[0]}."
-        elif len(parts) == 2:
-            return f"כדי לדייק בהתאמה, אשמח לדעת: {parts[0]}? וגם לגבי {parts[1]}?"
-        else:
-            joined = " וגם ".join([", ".join(parts[:-1]), parts[-1]])
-            return f"כדי לדייק בהתאמה, אשמח לקבל עוד כמה פרטים: {joined}?"
+        return "כדי לדייק בהתאמה, ספרו לי קצת על אורח החיים שלכם."
     else:
         phrases = {
             'a1_adapts_well_to_apartment_living': "your living environment (apartment, house with yard)",
@@ -184,13 +180,9 @@ def build_combined_level_a_question(missing_keys, lang='he'):
             'c1_amount_of_shedding': "whether shedding or allergies are a concern for you"
         }
         parts = [phrases[k] for k in missing_keys if k in phrases]
-        if len(parts) == 1:
+        if parts:
             return f"To make the best match, tell me a bit about {parts[0]}."
-        elif len(parts) == 2:
-            return f"To make the best match, I'd love to know: {parts[0]}? And also: {parts[1]}?"
-        else:
-            joined = " and also: ".join([", ".join(parts[:-1]), parts[-1]])
-            return f"To help me make the best match, could you tell me about: {joined}?"
+        return "To make the best match, tell me a bit about your lifestyle."
 
 def build_combined_level_b_question(missing_keys, lang='he'):
     if lang == 'he':
@@ -202,8 +194,9 @@ def build_combined_level_b_question(missing_keys, lang='he'):
             'a2_good_for_novice_owners': "האם יש לכם ניסיון קודם בגידול כלב"
         }
         parts = [phrases[k] for k in missing_keys if k in phrases]
-        joined = " וגם ".join([", ".join(parts[:-1]), parts[-1]]) if len(parts) > 1 else parts[0]
-        return f"שאלה אחרונה חביבה (אופציונלית) – ספרו לי על: {joined}."
+        if parts:
+            return f"שאלה נוספת (אופציונלית) – ספרו לי: {parts[0]}."
+        return "יש עוד פרטים שתרצו לשתף?"
     else:
         phrases = {
             'c1_amount_of_shedding': "whether shedding or allergies are a concern for you",
@@ -213,8 +206,9 @@ def build_combined_level_b_question(missing_keys, lang='he'):
             'a2_good_for_novice_owners': "your experience level with dogs (is this your first dog)"
         }
         parts = [phrases[k] for k in missing_keys if k in phrases]
-        joined = " and also: ".join([", ".join(parts[:-1]), parts[-1]]) if len(parts) > 1 else parts[0]
-        return f"One last optional question – tell me about: {joined}."
+        if parts:
+            return f"One additional optional question – tell me about: {parts[0]}."
+        return "Anything else you'd like to share?"
 
 def get_next_question_and_options(text_params, lang='he'):
     # Step 1: Sequential physical filters
