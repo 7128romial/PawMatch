@@ -12,7 +12,7 @@ from ml_engine import recommend_dogs
 
 app = Flask(__name__)
 # Use a stable secret key to keep session valid across restarts and gunicorn workers
-app.secret_key = os.getenv("SECRET_KEY") or os.urandom(24)
+app.secret_key = os.getenv("SECRET_KEY", "pawmatch_stable_secret_key_123")
 
 def contains_sensitive_info(text):
     if not text:
@@ -499,7 +499,8 @@ def chat(parsed_data=None):
             
             if not is_off_topic and not is_greeting and nlp_result.get("state") != "error" and nlp_result.get("extracted_parameters"):
                 for k, v in nlp_result["extracted_parameters"].items():
-                    session['text_params'][k] = v
+                    if v is not None and v != "":
+                        session['text_params'][k] = v
             
             next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
             session['state'] = next_state
@@ -643,7 +644,8 @@ def chat(parsed_data=None):
     # Merge extracted parameters
     if extracted:
         for k, v in extracted.items():
-            session['text_params'][k] = v
+            if v is not None and v != "":
+                session['text_params'][k] = v
             
     # Retry tracking for the active parameter
     if active_param:
