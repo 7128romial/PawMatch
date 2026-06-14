@@ -154,7 +154,8 @@ def build_session_data():
         "no_preference_count": session.get('no_preference_count', 0),
         "state_b_count": session.get('state_b_count', 0),
         "last_asked_param": session.get('last_asked_param', None),
-        "param_retry_count": session.get('param_retry_count', 0)
+        "param_retry_count": session.get('param_retry_count', 0),
+        "chat_history": session.get('chat_history', [])
     }
 
 def build_combined_level_a_question(missing_keys, lang='he'):
@@ -576,7 +577,8 @@ def chat(parsed_data=None):
         })
 
     retry_count = session.get('param_retry_count', 0)
-    nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang, retry_count=retry_count)
+    chat_history = session.get('chat_history', [])
+    nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang, retry_count=retry_count, chat_history=chat_history)
     
     if nlp_result.get("state") == "error":
         err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
@@ -624,6 +626,12 @@ def chat(parsed_data=None):
             if lang == 'en' else
             f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נחזור להתאמה שלנו:\n\n{next_q}"
         )
+        if user_message and msg:
+            ch = session.get('chat_history', [])
+            ch.append({"role": "user", "content": user_message})
+            ch.append({"role": "assistant", "content": msg})
+            session['chat_history'] = ch[-6:]
+            
         return jsonify({
             "response": msg,
             "options": next_opts,
@@ -656,6 +664,12 @@ def chat(parsed_data=None):
         return process_recommendation(selects, session['text_params'])
     else:
         response_text = next_question_from_llm if next_question_from_llm else next_q
+        if user_message and response_text:
+            ch = session.get('chat_history', [])
+            ch.append({"role": "user", "content": user_message})
+            ch.append({"role": "assistant", "content": response_text})
+            session['chat_history'] = ch[-6:]
+            
         return jsonify({
             "response": response_text,
             "options": next_opts,

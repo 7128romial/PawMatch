@@ -8,7 +8,7 @@ if not api_key or api_key == "your_api_key_here":
     raise ValueError("OPENAI_API_KEY environment variable is missing or placeholder. Cannot initialize OpenAI client.")
 client = OpenAI(api_key=api_key)
 
-def analyze_user_input(user_text, current_params=None, active_param=None, lang='he', retry_count=0):
+def analyze_user_input(user_text, current_params=None, active_param=None, lang='he', retry_count=0, chat_history=None):
     if current_params is None:
         current_params = {}
         
@@ -175,12 +175,16 @@ Retry count for Active Parameter: {retry_count} (0 = first time asking, 1+ = use
 
 Current user input: '{user_text}'"""
             
+        messages = [{"role": "system", "content": system_prompt}]
+        if chat_history:
+            for msg in chat_history:
+                if msg.get("content"):
+                    messages.append({"role": msg["role"], "content": msg["content"]})
+        messages.append({"role": "user", "content": user_prompt})
+            
         response = client.chat.completions.create(
             model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
+            messages=messages,
             tools=tools,
             tool_choice={"type": "function", "function": {"name": "extract_dog_preferences"}},
             temperature=0.0
