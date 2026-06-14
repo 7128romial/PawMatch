@@ -430,7 +430,7 @@ def chat(parsed_data=None):
         return process_recommendation(selects, session['text_params'])
         
     if current_session_state == "state_q":
-        recommended_breeds = client_session.get('recommended_dogs', session.get('recommended_dogs', []))
+        recommended_breeds = session.get('recommended_dogs', [])
         session['recommended_dogs'] = recommended_breeds
         if not user_message:
             err_msg = "Please enter text." if lang == 'en' else "אנא הכנס טקסט."
