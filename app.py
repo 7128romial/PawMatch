@@ -76,8 +76,12 @@ def is_greeting_message(text):
         return True
     if len(words) <= 3 and any(w in greetings for w in words):
         return True
-    if len(words) <= 4 and any(phrase in clean_msg_unpunct for phrase in ["רוצה לאמץ", "מעוניין לאמץ", "מעוניינת לאמץ", "מחפש כלב", "מחפשת כלב", "רוצה כלב", "want to adopt", "adopt a dog", "looking for a dog"]):
+    
+    # Check if the entire message is exactly one of the adoption intent phrases
+    adoption_phrases = ["רוצה לאמץ", "מעוניין לאמץ", "מעוניינת לאמץ", "מחפש כלב", "מחפשת כלב", "רוצה כלב", "want to adopt", "adopt a dog", "looking for a dog"]
+    if clean_msg_unpunct in adoption_phrases:
         return True
+        
     return False
 
 
