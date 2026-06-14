@@ -586,10 +586,18 @@ def chat(parsed_data=None):
     next_question_from_llm = nlp_result.get('next_question', '')
     
     if state == "state_e":
-        msg = ("Adopting a dog is a significant and long-term responsibility (10-15 years) and is not recommended solely out of boredom or as a temporary solution. "
+        fallback_msg = ("Adopting a dog is a significant and long-term responsibility (10-15 years) and is not recommended solely out of boredom or as a temporary solution. "
                "A dog is a living soul that needs care, time, and lots of love. If you are ready for this commitment, tell me about your lifestyle and we can begin the match.") if lang == 'en' else \
               ("אימוץ כלב הוא צעד משמעותי ואחראי לטווח ארוך (10-15 שנים) ולא מומלץ לעשות זאת רק מתוך שעמום או כפתרון זמני. "
                "כלב הוא נפש חיה שזקוקה לטיפול, זמן והמון אהבה. אם אתם מוכנים להתחייבות הזו, ספרו לי על אורח החיים שלכם ונתחיל בהתאמה.")
+        msg = next_question_from_llm if next_question_from_llm else fallback_msg
+        
+        if user_message and msg:
+            ch = session.get('chat_history', [])
+            ch.append({"role": "user", "content": user_message})
+            ch.append({"role": "assistant", "content": msg})
+            session['chat_history'] = ch[-6:]
+            
         return jsonify({
             "response": msg,
             "session_data": build_session_data()
