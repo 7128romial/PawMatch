@@ -174,6 +174,8 @@ def clean_dict(d):
             clean[k] = float(v) if not np.isnan(v) else None
         elif isinstance(v, np.ndarray):
             clean[k] = v.tolist()
+        elif isinstance(v, (list, dict)):
+            clean[k] = v
         elif pd.isna(v):
             clean[k] = None
         else:
@@ -210,6 +212,7 @@ def recommend_dogs(selects, text_params, lang='he'):
     for idx, row in filtered_df.iterrows():
         scores.append(calculate_weighted_score(row, text_params))
         
+    filtered_df = filtered_df.copy()
     filtered_df['match_score'] = scores
     
     # Apply strict 75% threshold

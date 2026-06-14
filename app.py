@@ -332,8 +332,8 @@ def get_missing_critical(params):
     return [c for c in v3_criticals if c not in params]
 
 @app.route('/api/chat', methods=['POST'])
-def chat():
-    data = request.json or {}
+def chat(parsed_data=None):
+    data = parsed_data if parsed_data is not None else (request.json or {})
     user_message = data.get('message', data.get('selection', ''))
     if user_message and len(user_message) > 500:
         user_message = user_message[:500]
@@ -655,20 +655,21 @@ def chat():
 
 @app.route('/api/button_click', methods=['POST'])
 def button_click():
-    data = request.json or {}
+    data = dict(request.json or {})
     selection = data.get('selection')
     
-    client_session = data.get('session_data') or {}
-    session['text_params'] = client_session.get('text_params', session.get('text_params', {}))
-    session['no_preference_count'] = client_session.get('no_preference_count', session.get('no_preference_count', 0))
-    session['state_b_count'] = client_session.get('state_b_count', session.get('state_b_count', 0))
-    session['state'] = client_session.get('state', session.get('state', 'step_1_size'))
+    # Secure session initialization (ignore client_session)
+    if 'text_params' not in session:
+        session['text_params'] = {}
+    session['no_preference_count'] = session.get('no_preference_count', 0)
+    session['state_b_count'] = session.get('state_b_count', 0)
+    session['state'] = session.get('state', 'step_1_size')
     
     if selection in ["אין לי העדפה", "No Preference"]:
         session['no_preference_count'] = session.get('no_preference_count', 0) + 1
         
     data['message'] = selection
-    return chat()
+    return chat(parsed_data=data)
 
 def process_recommendation(selects, text_params):
     try:
@@ -697,9 +698,9 @@ def process_recommendation(selects, text_params):
             if not isinstance(explanations, list):
                 explanations = []
             
-        explanation_map = {e.get("name"): e for e in explanations if isinstance(e, dict)}
+        explanation_map = {e.get("breed", e.get("name")): e for e in explanations if isinstance(e, dict)}
         for dog in dogs:
-            exp = explanation_map.get(dog.get("name"), {})
+            exp = explanation_map.get(dog.get("breed", dog.get("name")), {})
             dog["match_reason"] = exp.get("match_reason", "")
             dog["breed_info"] = exp.get("breed_info", "")
             
