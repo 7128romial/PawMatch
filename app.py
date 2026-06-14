@@ -12,7 +12,7 @@ from ml_engine import recommend_dogs
 
 app = Flask(__name__)
 # Use a stable secret key to keep session valid across restarts and gunicorn workers
-app.secret_key = os.getenv("SECRET_KEY", "pawmatch_secure_production_key_2026")
+app.secret_key = os.getenv("SECRET_KEY") or os.urandom(24)
 
 def contains_sensitive_info(text):
     if not text:
@@ -344,29 +344,18 @@ def chat():
     
     session['lang'] = lang
     
-    client_session = data.get('session_data') or {}
-    
-    text_params = client_session.get('text_params')
-    if text_params is None:
-        if 'text_params' not in session:
-            session['text_params'] = {}
-        text_params = session['text_params']
-    else:
-        session['text_params'] = text_params
+    # Ensure session variables exist
+    if 'text_params' not in session:
+        session['text_params'] = {}
+    text_params = session['text_params']
         
-    no_preference_count = client_session.get('no_preference_count')
-    if no_preference_count is None:
-        no_preference_count = session.get('no_preference_count', 0)
+    no_preference_count = session.get('no_preference_count', 0)
     session['no_preference_count'] = no_preference_count
     
-    state_b_count = client_session.get('state_b_count')
-    if state_b_count is None:
-        state_b_count = session.get('state_b_count', 0)
+    state_b_count = session.get('state_b_count', 0)
     session['state_b_count'] = state_b_count
     
-    current_session_state = client_session.get('state')
-    if current_session_state is None:
-        current_session_state = session.get('state', 'step_1_size')
+    current_session_state = session.get('state', 'step_1_size')
     session['state'] = current_session_state
     
     # Check for sensitive personal information (privacy guardrail)
@@ -771,4 +760,4 @@ def process_recommendation(selects, text_params):
         })
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)

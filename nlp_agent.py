@@ -158,7 +158,7 @@ Retry count for Active Parameter: {retry_count} (0 = first time asking, 1+ = use
 Current user input: '{user_text}'"""
             
         response = client.chat.completions.create(
-            model="gpt-5.4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -255,7 +255,7 @@ Recommended dogs data: {json.dumps(dogs_info)}
         if client is None:
             raise Exception("OpenAI API key is missing or placeholder.")
         response = client.chat.completions.create(
-            model="gpt-5.4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -291,7 +291,7 @@ def answer_breed_question(user_question, recommended_breeds=None, lang='he'):
         if client is None:
             raise Exception("OpenAI API key is missing or placeholder.")
         response = client.chat.completions.create(
-            model="gpt-5.4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_question}
