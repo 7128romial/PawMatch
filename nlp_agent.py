@@ -4,10 +4,9 @@ import json
 
 # Expecting OPENAI_API_KEY to be set in environment
 api_key = os.getenv("OPENAI_API_KEY")
-if api_key and api_key != "your_api_key_here":
-    client = OpenAI(api_key=api_key)
-else:
-    client = None
+if not api_key or api_key == "your_api_key_here":
+    raise ValueError("OPENAI_API_KEY environment variable is missing or placeholder. Cannot initialize OpenAI client.")
+client = OpenAI(api_key=api_key)
 
 def analyze_user_input(user_text, current_params=None, active_param=None, lang='he', retry_count=0):
     if current_params is None:
@@ -144,9 +143,6 @@ You MUST use the `extract_dog_preferences` tool.
     ]
 
     try:
-        if client is None:
-            raise Exception("OpenAI API key is missing or placeholder.")
-            
         user_prompt = f"""
 # Dynamic Context
 You have already collected the following data points (if any):
@@ -252,8 +248,6 @@ Recommended dogs data: {json.dumps(dogs_info)}
 """
 
     try:
-        if client is None:
-            raise Exception("OpenAI API key is missing or placeholder.")
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -267,7 +261,7 @@ Recommended dogs data: {json.dumps(dogs_info)}
         return result.get("explanations", [])
     except Exception as e:
         print(f"OpenAI API Error in generate_explanations: {e}")
-        return []
+        raise e
 
 def answer_breed_question(user_question, recommended_breeds=None, lang='he'):
     if recommended_breeds is None:
@@ -288,8 +282,6 @@ def answer_breed_question(user_question, recommended_breeds=None, lang='he'):
     """
     
     try:
-        if client is None:
-            raise Exception("OpenAI API key is missing or placeholder.")
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[

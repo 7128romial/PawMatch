@@ -336,7 +336,16 @@ def chat(parsed_data=None):
     data = parsed_data if parsed_data is not None else (request.json or {})
     user_message = data.get('message', data.get('selection', ''))
     if user_message and len(user_message) > 500:
-        user_message = user_message[:500]
+        err_msg = "ההודעה ארוכה מדי. אנא קצר/י ל-500 תווים." if request.json.get('lang', 'he') == 'he' else "Message is too long. Please shorten to 500 characters."
+        return jsonify({
+            "response": err_msg,
+            "session_data": {
+                "text_params": session.get('text_params', {}),
+                "state": session.get('state', 'step_1_size'),
+                "no_preference_count": session.get('no_preference_count', 0),
+                "state_b_count": session.get('state_b_count', 0)
+            }
+        })
         
     selects = data.get('selects', {})
     skip_to_results = data.get('skip', False)

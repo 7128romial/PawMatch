@@ -274,7 +274,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const savedSessionData = sessionStorage.getItem('pawmatch_session_data');
-            const sessionData = savedSessionData ? JSON.parse(savedSessionData) : null;
+            let sessionData = null;
+            try {
+                sessionData = savedSessionData ? JSON.parse(savedSessionData) : null;
+            } catch (e) {
+                console.warn("Invalid session data in sessionStorage, clearing it.");
+                sessionStorage.removeItem('pawmatch_session_data');
+            }
 
             const endpoint = isButton ? '/api/button_click' : '/api/chat';
             const payload = isButton 
@@ -303,7 +309,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.options) {
                     responseHtml += '<div class="chat-buttons">';
                     data.options.forEach(opt => {
-                        responseHtml += `<button class="chat-btn" onclick="window.handleChatBtn('${opt}')">${opt}</button>`;
+                        const escapedOpt = opt.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+                        responseHtml += `<button class="chat-btn" onclick="window.handleChatBtn('${escapedOpt}')">${escapedOpt}</button>`;
                     });
                     responseHtml += '</div>';
                 }
