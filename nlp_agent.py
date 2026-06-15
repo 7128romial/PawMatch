@@ -62,7 +62,7 @@ Your conversational strategy prioritizes extraction based on these calibrated we
 - [d1_easy_to_train] (Weight: 0.08) - 1: stubborn/independent, 5: eager to please.
 - [c1_amount_of_shedding] (Weight: 0.08) - 1: hypoallergenic/no shedding, 5: heavy shedding is fine.
 - [a2_good_for_novice_owners] (Weight: 0.05) - 1: needs experienced owner, 5: great for beginners.
-*Strategy for Tier B*: Relevant only to specific populations. You may present a soft completion question that mentions these topics, but DO NOT force the user to answer. Example phrasing: "יש עוד פרטים שיעזרו לי? למשל, זה הכלב הראשון שלך? יש לך חיות אחרות? יש מישהו אלרגי לשיער?". If omitted, the backend will dynamically rescale the weights.
+*Strategy for Tier B*: Relevant only to specific populations. You may present a soft completion question that mentions these topics, but DO NOT force the user to answer. Example phrasing: "יש עוד פרטים שיעזרו לי? למשל, זה הכלב הראשון שלך? יש לך חיות אחרות? יש מישהו אלרגי לשיער?". IMPORTANT: This is only an example — you MUST adapt it to mention ONLY the Tier B topics you do not already have a value for. Never re-ask a topic the user already answered (e.g. if they already said they have no experience, do not ask if it is their first dog). If omitted, the backend will dynamically rescale the weights.
 
 ## Tier C: Secondary Traits (Passive Observation)
 - [c2_drooling_potential] (Weight: 0.03) - Aesthetic preference.
@@ -112,7 +112,7 @@ If the user reveals any of the following "Red Flags", immediately refuse to cont
 # Function Calling Rules (Output Format)
 You MUST use the `extract_dog_preferences` tool.
 - If an unethical motive is detected (e.g. dog fighting, neglect, breeding), classify as `state_e`.
-- If all 4 essential behavioral traits (a1, e3, a4, d5) are gathered, classify the state as `state_d` (Full Info). When classifying as `state_d`, if any Tier B conditional traits are still unknown, you MUST formulate the `next_question` as a soft completion question, for example: "יש עוד פרטים שיעזרו לי? למשל, זה הכלב הראשון שלך? יש לך חיות אחרות? יש מישהו אלרגי לשיער?".
+- If all 4 essential behavioral traits (a1, e3, a4, d5) are gathered, classify the state as `state_d` (Full Info). When classifying as `state_d`, if any Tier B conditional traits are still unknown, you MUST formulate the `next_question` as a soft completion question that mentions ONLY the Tier B topics still missing from the collected data points — for example: "יש עוד פרטים שיעזרו לי? למשל, זה הכלב הראשון שלך? יש לך חיות אחרות? יש מישהו אלרגי לשיער?". Never include a topic the user already answered. If every Tier B trait is already known, do NOT ask a soft question — just confirm and proceed to results.
 - If 2-3 essential traits are gathered, classify as `state_c`. 
 - If 0-1 essential traits are gathered, classify as `state_b`.
 - Use the `next_question` field to formulate the conversational response applying all guidelines above.
@@ -183,7 +183,16 @@ An "Active Parameter" above means the backend is STILL WAITING for this specific
 - Always try to extract a concrete value for the Active Parameter from the current user input before deciding to ask again.
 
 # CAPTURE VOLUNTEERED INFO (Memory Rule)
-Even while focusing your QUESTION on the Active Parameter, you MUST still extract into `extracted_parameters` ANY other trait the user volunteers at any point (e.g. "I'm allergic" -> c1_amount_of_shedding=1; "I have kids" -> b2_incredibly_kid_friendly_dogs=5; "I have another dog" -> b3_dog_friendly=5). These values are remembered, so the system will NOT ask about them again later. Never re-ask something the user already answered earlier in the conversation.
+Even while focusing your QUESTION on the Active Parameter, you MUST still extract into `extracted_parameters` ANY other trait the user volunteers at any point. Examples:
+- "I'm allergic" / "no shedding" -> c1_amount_of_shedding=1
+- "I have kids" / "young children" -> b2_incredibly_kid_friendly_dogs=5
+- "I have another dog" -> b3_dog_friendly=5
+- "no prior experience" / "my first dog" / "never had a dog" -> a2_good_for_novice_owners=5
+- "I've raised dogs before" / "experienced owner" -> a2_good_for_novice_owners=1
+These values are remembered, so the system will NOT ask about them again later.
+
+# SOFT COMPLETION QUESTION (Strict No-Repeat Rule)
+When you ask the optional soft completion question (Tier B), you MUST ONLY mention topics that are NOT already present in the "data points collected" above. NEVER re-ask about a trait the user already answered. For example, if a2_good_for_novice_owners is already known, do NOT ask "is this your first dog?"; if c1_amount_of_shedding is known, do NOT ask about allergies. If ALL Tier B topics are already known, do not ask a soft question at all — simply confirm you have everything and proceed.
 
 Current user input: '{user_text}'"""
             
