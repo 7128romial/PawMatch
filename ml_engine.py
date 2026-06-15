@@ -17,18 +17,21 @@ numerical_cols = ['age_years', 'weight_kg', 'a1_adapts_well_to_apartment_living'
                   'b3_dog_friendly', 'c1_amount_of_shedding', 'c2_drooling_potential', 'd1_easy_to_train', 
                   'd5_tendency_to_bark_or_howl', 'e1_energy_level', 'e3_exercise_needs', 'life_span_min', 'life_span_max']
 
-behavioral_cols = [
-    'a1_adapts_well_to_apartment_living',
-    'e3_exercise_needs',
-    'a4_tolerates_being_alone',
-    'd5_tendency_to_bark_or_howl',
-    'c1_amount_of_shedding',
-    'b3_dog_friendly',
-    'b2_incredibly_kid_friendly_dogs',
-    'd1_easy_to_train',
-    'a2_good_for_novice_owners',
-    'c2_drooling_potential'
-]
+# המשקלים הרשמיים מהדו"ח (סכומם שווה ל-1.0)
+base_weights = {
+    'a1_adapts_well_to_apartment_living': 0.18,
+    'e3_exercise_needs': 0.16,
+    'a4_tolerates_being_alone': 0.13,
+    'd5_tendency_to_bark_or_howl': 0.11,
+    'b3_dog_friendly': 0.09,
+    'b2_incredibly_kid_friendly_dogs': 0.09,
+    'd1_easy_to_train': 0.08,
+    'c1_amount_of_shedding': 0.08,
+    'a2_good_for_novice_owners': 0.05,
+    'c2_drooling_potential': 0.03
+}
+
+behavioral_cols = list(base_weights.keys())
 
 df_final = None
 df_numerical_scaled = None
@@ -109,61 +112,32 @@ def apply_hard_filters(dogs_df, selects, text_params):
 
     return filtered
 
-def calculate_weighted_score(row, text_params):
-    base_weights = {
-        'a1_adapts_well_to_apartment_living': 0.18,
-        'e3_exercise_needs': 0.16,
-        'a4_tolerates_being_alone': 0.13,
-        'd5_tendency_to_bark_or_howl': 0.11,
-        'b3_dog_friendly': 0.09,
-        'b2_incredibly_kid_friendly_dogs': 0.09,
-        'd1_easy_to_train': 0.08,
-        'c1_amount_of_shedding': 0.08,
-        'a2_good_for_novice_owners': 0.05,
-        'c2_drooling_potential': 0.03
-    }
-    
-    level_a = {
-        'a1_adapts_well_to_apartment_living',
-        'e3_exercise_needs',
-        'a4_tolerates_being_alone',
-        'd5_tendency_to_bark_or_howl'
-    }
-    
-    # Identify active parameters for renormalization:
-    # Level A parameters are always active. Level B/C are active only if present in text_params.
-    active_params = []
-    for p in base_weights:
-        if p in level_a or p in text_params:
-            active_params.append(p)
-            
-    weight_sum = sum(base_weights[p] for p in active_params)
-    if weight_sum == 0:
-        weight_sum = 1.0
-        
-    score = 0.0
-    for p in active_params:
-        w_norm = base_weights[p] / weight_sum
-        
-        if p in text_params:
-            user_val = text_params[p]
-            # Convert to numeric if possible (e.g. float or string number)
-            user_val_num = safe_int(user_val, None)
-            if user_val_num is not None:
-                dog_val = row[p]
-                if pd.isna(dog_val):
-                    pct_match = 0.80
-                else:
-                    diff = abs(user_val_num - dog_val)
-                    pct_match = max(0, 1 - (diff / 4.0))
-                score += w_norm * pct_match
-            else:
-                score += w_norm * 0.85
-        else:
-            # Unspecified Level A parameters get a default match of 80% to prevent score inflation
-            score += w_norm * 0.80
-            
-    return score * 100
+def calculate_weighted_cosine_similarity(user_params, df_target):
+    """
+    מנוע ה-ML החדש: מחשב דמיון קוסינוס משוקלל אמיתי ומטריציוני
+    בין פרופיל המאמץ שחולץ לכל הכלבים שעברו את הסינון הראשוני.
+    מחזיר מערך numpy של ציונים באחוזים (0-100), שורה לכל כלב ב-df_target.
+    """
+    # בניית וקטור המשתמש (ערך ברירת מחדל 3 לתכונות שלא עלו בשיחה)
+    user_vector = np.array([float(safe_int(user_params.get(col), 3)) for col in behavioral_cols])
+
+    # בניית מטריצת הכלבים מתוך המאגר המסונן
+    dogs_matrix = df_target[behavioral_cols].fillna(3).values
+
+    # וקטור המשקלים המנורמל
+    weights = np.array([base_weights[col] for col in behavioral_cols])
+    weights_normalized = weights / np.sum(weights)
+
+    # הטמעת המשקלים בוקטורים (מכפילים בשורש המשקל לטובת דמיון קוסינוס משוקלל תקין)
+    sqrt_weights = np.sqrt(weights_normalized)
+    user_weighted = user_vector * sqrt_weights
+    dogs_weighted = dogs_matrix * sqrt_weights
+
+    # חישוב דמיון קוסינוס בריצה מטריציונית מהירה
+    similarities = cosine_similarity([user_weighted], dogs_weighted)[0]
+
+    # החזרת הציון באחוזים (0-100)
+    return similarities * 100
 
 def clean_dict(d):
     clean = {}
@@ -206,14 +180,13 @@ def recommend_dogs(selects, text_params, lang='he'):
             breed_not_found = True
             
     filtered_df = apply_hard_filters(df_final, selects, text_params)
-    
-    # Calculate weighted scores
-    scores = []
-    for idx, row in filtered_df.iterrows():
-        scores.append(calculate_weighted_score(row, text_params))
-        
     filtered_df = filtered_df.copy()
-    filtered_df['match_score'] = scores
+
+    # Calculate weighted cosine similarity scores (matrix-based)
+    if len(filtered_df) > 0:
+        filtered_df['match_score'] = calculate_weighted_cosine_similarity(text_params, filtered_df)
+    else:
+        filtered_df['match_score'] = []
     
     # Apply strict 75% threshold
     filtered_df = filtered_df[filtered_df['match_score'] >= 75]

@@ -575,6 +575,12 @@ def chat(parsed_data=None):
             "session_data": build_session_data()
         })
 
+    # צבירת הטקסט החופשי הגולמי של המשתמש לאורך כל השיחה (לא מוגבל כמו chat_history),
+    # כדי שמנוע הנימוקים יוכל להצליב מול אורח החיים המקורי שתואר.
+    if user_message:
+        existing_raw = session.get('user_raw_text', '')
+        session['user_raw_text'] = (existing_raw + " " + user_message).strip() if existing_raw else user_message.strip()
+
     retry_count = session.get('param_retry_count', 0)
     chat_history = session.get('chat_history', [])
     nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang, retry_count=retry_count, chat_history=chat_history)
@@ -718,11 +724,27 @@ def process_recommendation(selects, text_params):
             })
             
         dogs = rec.get("dogs", [])
-        
+
+        # הטקסט החופשי הגולמי שנצבר ב-session לאורך השיחה (השלם, לא מוגבל ל-6 הודעות)
+        user_original_text = session.get('user_raw_text', '')
+        # נפילה אחורה: אם לא נצבר טקסט (למשל הגעה לתוצאות דרך כפתורים בלבד), נשחזר מהיסטוריית השיחה
+        if not user_original_text:
+            chat_history = session.get('chat_history', [])
+            user_original_text = " ".join(
+                msg.get("content", "")
+                for msg in chat_history
+                if msg.get("role") == "user" and msg.get("content")
+            ).strip()
+
         explanations = []
         if dogs:
             try:
-                explanations = generate_explanations(dogs, text_params, lang)
+                explanations = generate_explanations(
+                    dogs=dogs,
+                    user_params=text_params,
+                    user_original_text=user_original_text,
+                    lang=lang
+                )
             except Exception as ex_err:
                 print(f"Error generating explanations: {ex_err}")
                 explanations = []
@@ -792,4 +814,7 @@ def process_recommendation(selects, text_params):
         })
 
 if __name__ == '__main__':
-    app.run(debug=False, port=5000)
+    # Render מגדיר את הפורט דרך משתנה סביבה. אם הוא לא קיים, נשתמש ב-5000 לוקאלית.
+    port = int(os.environ.get("PORT", 5000))
+    # ב-Production (Render) אנחנו מכבים את ה-debug ומאפשרים גישה מכל הכתובות (0.0.0.0)
+    app.run(host='0.0.0.0', port=port, debug=False)

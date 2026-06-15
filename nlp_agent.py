@@ -212,8 +212,11 @@ Current user input: '{user_text}'"""
             "error": str(e)
         }
 
-def generate_explanations(dogs, user_params, lang='he'):
-    # Load scraped breed descriptions
+def generate_explanations(dogs, user_params, user_original_text="", lang='he'):
+    """
+    מנוע ה-NLP: מייצר הסברים מותאמים אישית ל-3 הכלבים שנבחרו על ידי מנוע ה-ML,
+    תוך הצלבה ישירה בין תיאור אורח החיים המקורי של המשתמש למאפייני הכלב והגזע.
+    """
     breed_desc_map = {}
     desc_path = os.path.join("data", "breed_descriptions.json")
     if os.path.exists(desc_path):
@@ -223,60 +226,54 @@ def generate_explanations(dogs, user_params, lang='he'):
         except Exception:
             pass
 
+    # הכנת כרטיס המידע המלא עבור כל כלב שנבחר
     dogs_info = []
     for d in dogs:
         breed_key = str(d.get("breed", "")).lower().strip()
-        breed_desc = breed_desc_map.get(breed_key, "Description not available.")
-        
+        breed_desc = breed_desc_map.get(breed_key, "מידע כללי על תכונות הגזע אינו זמין כעת." if lang == 'he' else "Description not available.")
+
         dogs_info.append({
-            "name": d.get("name"),
+            "name": d.get("name", "הכלב" if lang == 'he' else "the dog"),
             "breed": d.get("breed"),
             "breed_description": breed_desc,
             "match_score": d.get("match_score"),
             "cluster": d.get("cluster"),
-            "sex": d.get("sex"),
-            "size": d.get("size"),
-            "color": d.get("color"),
-            "a1_adapts_well_to_apartment_living": d.get("a1_adapts_well_to_apartment_living"),
-            "a4_tolerates_being_alone": d.get("a4_tolerates_being_alone"),
-            "b2_incredibly_kid_friendly_dogs": d.get("b2_incredibly_kid_friendly_dogs"),
-            "a2_good_for_novice_owners": d.get("a2_good_for_novice_owners")
+            "a1_apartment": d.get("a1_adapts_well_to_apartment_living"),
+            "a4_alone": d.get("a4_tolerates_being_alone"),
+            "d1_trainable": d.get("d1_easy_to_train"),
+            "e3_exercise": d.get("e3_exercise_needs")
         })
-        
+
     system_prompt = f"""
-You are a warm, professional dog adoption coordinator for PawMatch.
-Write personalized explanations and breed descriptions for 3 recommended dogs.
-Generate your response in JSON format. The response language must be strictly: {"Hebrew (עברית)" if lang == 'he' else "English"}.
+You are an expert dog adoption coordinator and matchmaker for PawMatch.
+Your task is to generate customized, compelling explanations for the top 3 matched dogs based on BOTH the user's structured profile and their original free-text query.
 
-Guidelines for explanation:
-- Present matches transparently with their match percentage (e.g., "לונה, התאמה של 94%").
-- Create an intuitive description referencing their behavior cluster. You can reference these cluster descriptions conceptually:
-  * Cluster 0: כלבי משפחה אנרגטיים (family_active)
-  * Cluster 1: כלבי אופי עצמאיים (independent_character)
-  * Cluster 2: כלבי חברה דירתיים (small_companion)
-  * Cluster 3: כלבי שמירה גדולים (large_working)
-  * Cluster 4: כלב חריג ייחודי (outlier_unique - Basenji)
-  * Cluster 5: כלבי עבודה חכמים (smart_active)
-
-Output JSON structure:
-{{
-  "explanations": [
-    {{
-      "breed": "Breed_Name",
-      "name": "Dog_Name",
-      "match_reason": "A 1-2 sentence explanation of why this specific dog is a match for the user's parameters and their behavior cluster.",
-      "breed_info": "A 1-2 sentence description of the breed's general temperament, origins, and key characteristics. IMPORTANT: You MUST base this strictly on the 'breed_description' field provided for each dog. Do NOT invent facts. Also, you MUST explicitly mention in your explanation that this breed information is sourced from DogTime.com."
-    }}
-  ]
-}}
+CRITICAL INSTRUCTIONS:
+1. Explain the match by directly linking the dog's characteristics (like energy level, trainability, apartment adaptation scores) to the user's specific lifestyle details mentioned in their raw text.
+2. Incorporate the breed information from the provided description. You MUST explicitly state that the breed characteristics and history are sourced from DogTime.com.
+3. Keep the tone warm, highly personalized, professional, and encouraging.
+4. Output MUST be a valid JSON object matching the requested schema strictly.
+5. The text within the JSON fields must be written entirely in {"Hebrew (עברית)" if lang == 'he' else "English"}.
 """
 
     user_prompt = f"""
-User parameters: {json.dumps(user_params)}
-Recommended dogs data: {json.dumps(dogs_info)}
+User Original Free Text: "{user_original_text}"
+Extracted Structured Parameters: {json.dumps(user_params, ensure_ascii=False)}
+Recommended Dogs Data: {json.dumps(dogs_info, ensure_ascii=False)}
+
+Generate the output JSON with the exact key "explanations" containing a list of objects.
+Each object MUST contain these exact keys:
+- "breed": the dog's breed, copied verbatim from the "breed" field in the provided Recommended Dogs Data (required for downstream mapping).
+- "name": the dog's name.
+- "match_reason": a 1-2 sentence explanation linking the dog's traits to the user's specific lifestyle from their original free text.
+- "breed_info": a 1-2 sentence breed description based strictly on the provided "breed_description". Do NOT invent facts, and explicitly mention that this breed information is sourced from DogTime.com.
 """
 
     try:
+        if client is None:
+            raise Exception("OpenAI API key is missing or configuration error.")
+
+        # מודל אמיתי, יציב ומקצועי
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -284,13 +281,13 @@ Recommended dogs data: {json.dumps(dogs_info)}
                 {"role": "user", "content": user_prompt}
             ],
             response_format={ "type": "json_object" },
-            temperature=0.7
+            temperature=0.6
         )
         result = json.loads(response.choices[0].message.content)
         return result.get("explanations", [])
     except Exception as e:
-        print(f"OpenAI API Error in generate_explanations: {e}")
-        raise e
+        print(f"Error in generate_explanations: {e}")
+        return []
 
 def answer_breed_question(user_question, recommended_breeds=None, lang='he'):
     if recommended_breeds is None:
