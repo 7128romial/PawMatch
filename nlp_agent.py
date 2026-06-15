@@ -175,6 +175,13 @@ You have already collected the following data points (if any):
 Currently asked parameter (Active Parameter): {active_param}
 Retry count for Active Parameter: {retry_count} (0 = first time asking, 1+ = user dodged/was vague previously)
 
+# ACTIVE PARAMETER FOCUS (Strict Anti-Loop Rule)
+An "Active Parameter" above means the backend is STILL WAITING for this specific trait and the conversation CANNOT advance to results until it is resolved.
+- Your `next_question` MUST focus on extracting THIS Active Parameter. Do NOT jump ahead to Tier B / soft completion questions (other pets, allergies, first dog) while an essential Active Parameter is still pending.
+- If `retry_count == 0`: ask about the Active Parameter (rephrase it naturally if you already asked once).
+- If `retry_count >= 1`: the user has already dodged/been vague about this exact parameter. Ask ONE more time using a COMPLETELY DIFFERENT angle/phrasing. If their current input is still vague, extract a neutral value of 3 for this Active Parameter in `extracted_parameters` and move on.
+- Always try to extract a concrete value for the Active Parameter from the current user input before deciding to ask again.
+
 Current user input: '{user_text}'"""
             
         messages = [{"role": "system", "content": system_prompt}]
