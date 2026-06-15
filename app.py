@@ -664,7 +664,16 @@ def chat(parsed_data=None):
             val = session['text_params'][active_param]
             session['confidence_penalty'] = session.get('confidence_penalty', False) or (val == 3 and retry_count >= 1) # Track medium confidence
         else:
-            session['param_retry_count'] = retry_count + 1
+            new_retry = retry_count + 1
+            session['param_retry_count'] = new_retry
+            # Anti-loop safety net: if the active parameter still couldn't be extracted
+            # after repeated attempts (the LLM kept asking other things instead of this
+            # one), assign a neutral value (3) so the conversation can progress to results
+            # instead of looping forever on the same missing parameter.
+            if new_retry >= 2:
+                session['text_params'][active_param] = 3
+                session['confidence_penalty'] = True
+                session['param_retry_count'] = 0
 
     if current_session_state == 'step_2_welcome':
         session['text_params']['welcome_done'] = True
