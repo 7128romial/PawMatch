@@ -767,9 +767,10 @@ def process_recommendation(selects, text_params):
             dog["breed_info"] = exp.get("breed_info", "")
 
             # Innovation layer 2: surface the Isolation Forest anomaly flag to the user.
-            # If a dog is a behavioral outlier (is_outlier == -1) or in the anomalous
-            # Basenji cluster (cluster == 4), inject a clear warning into its match_reason.
-            is_anomaly = dog.get("is_outlier") == -1 or dog.get("cluster") == 4
+            # Rely ONLY on the data-driven outlier flag (is_outlier == -1). The KMeans
+            # cluster id is arbitrary per fit (cluster 4 is NOT reliably "the Basenji"),
+            # so using it would falsely flag normal breeds like the Maltese.
+            is_anomaly = dog.get("is_outlier") == -1
             if is_anomaly:
                 anomaly_warning = (
                     "\n\n⚠️ שימו לב: כלב זה בעל פרופיל התנהגותי ייחודי ולא שגרתי, מומלץ להתייעץ עם צוות המקלט."
