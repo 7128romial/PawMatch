@@ -182,6 +182,9 @@ An "Active Parameter" above means the backend is STILL WAITING for this specific
 - If `retry_count >= 1`: the user has already dodged/been vague about this exact parameter. Ask ONE more time using a COMPLETELY DIFFERENT angle/phrasing. If their current input is still vague, extract a neutral value of 3 for this Active Parameter in `extracted_parameters` and move on.
 - Always try to extract a concrete value for the Active Parameter from the current user input before deciding to ask again.
 
+# CAPTURE VOLUNTEERED INFO (Memory Rule)
+Even while focusing your QUESTION on the Active Parameter, you MUST still extract into `extracted_parameters` ANY other trait the user volunteers at any point (e.g. "I'm allergic" -> c1_amount_of_shedding=1; "I have kids" -> b2_incredibly_kid_friendly_dogs=5; "I have another dog" -> b3_dog_friendly=5). These values are remembered, so the system will NOT ask about them again later. Never re-ask something the user already answered earlier in the conversation.
+
 Current user input: '{user_text}'"""
             
         messages = [{"role": "system", "content": system_prompt}]
