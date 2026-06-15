@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
+from sklearn.ensemble import IsolationForest
 
 def safe_int(val, default=None):
     if val is None:
@@ -37,14 +38,18 @@ df_final = None
 df_numerical_scaled = None
 scaler = MinMaxScaler()
 kmeans_model = KMeans(n_clusters=6, random_state=42)
+# Anomaly detector (innovation layer 2): flags behaviorally unusual dogs (e.g. the outlier Basenji profile)
+iso_forest = IsolationForest(n_estimators=100, contamination=0.05, random_state=42)
 
 def load_data():
-    global df_final, df_numerical_scaled, scaler, kmeans_model
+    global df_final, df_numerical_scaled, scaler, kmeans_model, iso_forest
     try:
         df_final = pd.read_csv("data/dogs_final.csv")
         df_numerical_scaled = pd.DataFrame(scaler.fit_transform(df_final[numerical_cols]), columns=numerical_cols, index=df_final.index)
         kmeans_model.fit(df_numerical_scaled)
         df_final['cluster'] = kmeans_model.labels_
+        # Isolation Forest anomaly detection on the behavioral profile (-1 = outlier, 1 = normal)
+        df_final['is_outlier'] = iso_forest.fit_predict(df_numerical_scaled[behavioral_cols])
     except FileNotFoundError:
         print("Error: data/dogs_final.csv not found.")
     except Exception as e:
