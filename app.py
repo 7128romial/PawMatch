@@ -682,7 +682,21 @@ def chat(parsed_data=None):
         
     next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
     session['state'] = next_state
-    
+
+    # Reconcile a model/backend disagreement: the model declared it has all the
+    # essential info (state_d) and tends to reply "results coming soon", but the
+    # backend is still missing a Tier A trait it never managed to extract (e.g. the
+    # user never discussed barking). Without this we'd show that message and dead-end
+    # with no question and no results. Default the missing essentials and proceed.
+    if state == 'state_d' and next_state == 'step_4_essential':
+        for p in level_a:
+            if p not in session['text_params']:
+                session['text_params'][p] = 3
+                session['confidence_penalty'] = True
+        session['text_params']['soft_done'] = True
+        next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
+        session['state'] = next_state
+
     if next_state == 'state_q':
         return process_recommendation(selects, session['text_params'])
     else:
