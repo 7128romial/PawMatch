@@ -761,6 +761,10 @@ def process_recommendation(selects, text_params):
                 if msg.get("role") == "user" and msg.get("content")
             ).strip()
 
+        # Section #12: if the breed-alternative fallback was used, tell the explanation
+        # layer which breed the user originally wanted so it can frame the alternatives.
+        breed_requested = rec.get("breed_requested") if rec.get("fallback_to_breed_vector") else None
+
         explanations = []
         if dogs:
             try:
@@ -768,6 +772,7 @@ def process_recommendation(selects, text_params):
                     dogs=dogs,
                     user_params=text_params,
                     user_original_text=user_original_text,
+                    breed_requested=breed_requested,
                     lang=lang
                 )
             except Exception as ex_err:

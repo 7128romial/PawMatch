@@ -231,10 +231,11 @@ Current user input: '{user_text}'"""
             "error": str(e)
         }
 
-def generate_explanations(dogs, user_params, user_original_text="", lang='he'):
+def generate_explanations(dogs, user_params, user_original_text="", breed_requested=None, lang='he'):
     """
     מנוע ה-NLP: מייצר הסברים מותאמים אישית ל-3 הכלבים שנבחרו על ידי מנוע ה-ML,
     תוך הצלבה ישירה בין תיאור אורח החיים המקורי של המשתמש למאפייני הכלב והגזע.
+    breed_requested: אם מנגנון הגזע החלופי (#12) הופעל, שם הגזע שהמשתמש ביקש במקור.
     """
     breed_desc_map = {}
     desc_path = os.path.join("data", "breed_descriptions.json")
@@ -263,6 +264,16 @@ def generate_explanations(dogs, user_params, user_original_text="", lang='he'):
             "e3_exercise": d.get("e3_exercise_needs")
         })
 
+    # Section #12: inject an alternative-breed framing only when the ML fallback was used.
+    alternative_breed_instruction = ""
+    if breed_requested:
+        alternative_breed_instruction = (
+            f"\n6. IMPORTANT: The user specifically hoped to adopt a '{breed_requested}', but none were "
+            f"available under their physical filters. In each match_reason, gently explain that while no "
+            f"'{breed_requested}' was available, these dogs share a very similar behavioral profile / lifestyle "
+            f"cluster to the '{breed_requested}', making them excellent alternatives."
+        )
+
     system_prompt = f"""
 You are an expert dog adoption coordinator and matchmaker for PawMatch.
 Your task is to generate customized, compelling explanations for the top 3 matched dogs based on BOTH the user's structured profile and their original free-text query.
@@ -272,7 +283,7 @@ CRITICAL INSTRUCTIONS:
 2. Incorporate the breed information from the provided description. You MUST explicitly state that the breed characteristics and history are sourced from DogTime.com.
 3. Keep the tone warm, highly personalized, professional, and encouraging.
 4. Output MUST be a valid JSON object matching the requested schema strictly.
-5. The text within the JSON fields must be written entirely in {"Hebrew (עברית)" if lang == 'he' else "English"}.
+5. The text within the JSON fields must be written entirely in {"Hebrew (עברית)" if lang == 'he' else "English"}.{alternative_breed_instruction}
 """
 
     user_prompt = f"""
