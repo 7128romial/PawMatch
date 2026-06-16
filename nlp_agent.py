@@ -186,10 +186,10 @@ An "Active Parameter" above means the backend is STILL WAITING for this specific
 Even while focusing your QUESTION on the Active Parameter, you MUST still extract into `extracted_parameters` ANY other trait the user volunteers at any point. Examples:
 - "I'm allergic" / "no shedding" -> c1_amount_of_shedding=1
 - "I have kids" / "young children" -> b2_incredibly_kid_friendly_dogs=5
-- "I have another dog" -> b3_dog_friendly=5
+- "I have another dog" / "I already have a dog at home" -> b3_dog_friendly=5 AND a2_good_for_novice_owners=1 (someone who already owns a dog is NOT a first-time owner — you must NEVER then ask if it is their first dog)
 - "no prior experience" / "my first dog" / "never had a dog" -> a2_good_for_novice_owners=5
 - "I've raised dogs before" / "experienced owner" -> a2_good_for_novice_owners=1
-These values are remembered, so the system will NOT ask about them again later.
+These values are remembered, so the system will NOT ask about them again later. Always apply common-sense logical implications between traits (e.g. owning a dog implies experience).
 
 # SOFT COMPLETION QUESTION (Strict No-Repeat Rule)
 When you ask the optional soft completion question (Tier B), you MUST ONLY mention topics that are NOT already present in the "data points collected" above. NEVER re-ask about a trait the user already answered. For example, if a2_good_for_novice_owners is already known, do NOT ask "is this your first dog?"; if c1_amount_of_shedding is known, do NOT ask about allergies. If ALL Tier B topics are already known, do not ask a soft question at all — simply confirm you have everything and proceed.

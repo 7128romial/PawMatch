@@ -81,6 +81,34 @@ def scenario_1():
     return (not reasked) and reached
 
 
+def scenario_3():
+    print("\n" + "=" * 72)
+    print("SCENARIO 3 — user says 'I already have a dog'; must NOT ask 'first dog?'")
+    print("=" * 72)
+    client.post("/api/reset")
+    buttons(["אין לי העדפה", "אין לי העדפה", "אין לי העדפה", "אין לי העדפה"])
+    questions = []
+    d = post("/api/chat", {"message": "חשוב לי שיהיה שקט כי אני אלרגית, ויש לי כבר כלב אחד בבית",
+                           "lang": "he"})
+    show("after 'allergic + already have a dog'", d)
+    if "dogs" not in d:
+        questions.append(d.get("response", ""))
+    # one more natural turn then force results
+    if "dogs" not in d:
+        d = post("/api/chat", {"message": "כן הוא יכול להיות לבד כמה שעות", "lang": "he"})
+        show("after alone answer", d)
+        if "dogs" not in d:
+            questions.append(d.get("response", ""))
+    if "dogs" not in d:
+        d = post("/api/chat", {"message": "", "skip": True, "lang": "he"})
+        show("after skip -> results", d)
+    reasked_first = any("ראשון" in q for q in questions)
+    print("\n  questions asked:", [q[:120] for q in questions])
+    print("  CHECK did NOT ask 'first dog' after user said they own a dog:",
+          "FAIL (asked!)" if reasked_first else "PASS")
+    return not reasked_first
+
+
 def scenario_2_direct():
     print("\n" + "=" * 72)
     print("SCENARIO 2a — anomaly flag flows through ml_engine (deterministic)")
@@ -114,6 +142,7 @@ def scenario_2_e2e():
 if __name__ == "__main__":
     results = {
         "1 - no re-ask + results": scenario_1(),
+        "3 - owns a dog -> no 'first dog?'": scenario_3(),
         "2a - anomaly flag (ml)": scenario_2_direct(),
         "2b - anomaly warning (e2e)": scenario_2_e2e(),
     }
