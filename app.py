@@ -148,6 +148,8 @@ button_mappings = {
 
 @app.route('/api/reset', methods=['POST'])
 def reset():
+    # Explicitly drop the previous user's accumulated free-text profile, then wipe the session.
+    session.pop('user_raw_text', None)
     session.clear()
     return jsonify({"status": "success"})
 
