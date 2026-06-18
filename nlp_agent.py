@@ -179,8 +179,8 @@ Retry count for Active Parameter: {retry_count} (0 = first time asking, 1+ = use
 An "Active Parameter" above means the backend is STILL WAITING for this/these specific trait(s) and the conversation CANNOT advance to results until they are resolved.
 - Your `next_question` MUST focus on extracting ALL of these Active Parameters in ONE single combined question (e.g. "Where do you live, and how much exercise can you provide?"). Do NOT jump ahead to Tier B / soft completion questions (other pets, allergies, first dog) while an essential Active Parameter is still pending.
 - If `retry_count == 0`: ask about ALL the Active Parameters naturally.
-- If `retry_count >= 1`: the user has already dodged/been vague. Ask ONE more time using a COMPLETELY DIFFERENT angle/phrasing. If their current input is still vague, extract a neutral value of 3 for these Active Parameters in `extracted_parameters` and move on.
-- Always try to extract a concrete value for the Active Parameters from the current user input before deciding to ask again.
+- If `retry_count >= 1`: the user has already dodged/been vague. Ask ONE more time using a COMPLETELY DIFFERENT angle/phrasing.
+- CRITICAL RULE: NEVER extract a neutral value (like 3) for an Active Parameter just because the user ignored it or was vague. If the user ignored a parameter, leave it COMPLETELY OMITTED from `extracted_parameters`. The backend will automatically handle anti-loop protection.
 
 # CAPTURE VOLUNTEERED INFO (Memory Rule)
 Even while focusing your QUESTION on the Active Parameter, you MUST still extract into `extracted_parameters` ANY other trait the user volunteers at any point. Examples:
