@@ -251,9 +251,9 @@ def get_next_question_and_options(text_params, lang='he'):
     missing_level_a = [p for p in level_a if p not in text_params]
     
     if not text_params.get('welcome_done'):
-        question = ("ספר/י לי קצת על עצמך ועל אורח החיים שלך, ככל שתפרט/י יותר, ההתאמה תהיה מדויקת יותר" 
+        question = ("ספר/י לי קצת על עצמך ועל אורח החיים שלך, ככל שתפרט/י יותר, ההתאמה תהיה מדויקת יותר. למשל, ספרו לי איפה אתם גרים (דירה/בית עם חצר)?" 
                     if lang == 'he' else 
-                    "Tell me a bit about yourself and your lifestyle. The more details you provide, the more accurate the match will be.")
+                    "Tell me a bit about yourself and your lifestyle. The more details you provide, the more accurate the match will be. For example, where do you live (apartment/house)?")
         return question, None, 'step_2_welcome'
 
     # Step 4: Combined Level A question
