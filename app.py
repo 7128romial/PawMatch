@@ -661,17 +661,25 @@ def chat(parsed_data=None):
             if v is not None and v != "":
                 session['text_params'][k] = v
             
-    # Retry tracking for the active parameter
+    # Retry tracking for the active parameters
     if active_params_str:
-        # If all currently asked parameters are now extracted, reset retry count
-        if all(p in session['text_params'] for p in missing_level_a):
+        # Check which of the previously missing parameters were just extracted
+        newly_extracted = [p for p in missing_level_a if p in session['text_params']]
+        
+        if len(newly_extracted) == len(missing_level_a):
+            # All asked parameters were extracted
             session['param_retry_count'] = 0
             session['confidence_penalty'] = session.get('confidence_penalty', False) or any(session['text_params'][p] == 3 for p in missing_level_a) and retry_count >= 1
+        elif len(newly_extracted) > 0:
+            # User answered AT LEAST ONE of the asked parameters. 
+            # Reset retry count so the bot can ask about the remaining ones without skipping.
+            session['param_retry_count'] = 0
         else:
+            # User answered NONE of the asked parameters.
             new_retry = retry_count + 1
             session['param_retry_count'] = new_retry
             if new_retry >= 2:
-                # Force fill all missing Tier A
+                # Force fill all missing Tier A to prevent infinite loop
                 for p in missing_level_a:
                     if p not in session['text_params']:
                         session['text_params'][p] = 3
