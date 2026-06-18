@@ -201,7 +201,8 @@ def build_combined_level_b_question(missing_keys, lang='he'):
         }
         parts = [phrases[k] for k in missing_keys if k in phrases]
         if parts:
-            return f"שאלה נוספת (אופציונלית) – ספרו לי: {parts[0]}."
+            joined = " או ".join([", ".join(parts[:-1]), parts[-1]]) if len(parts) > 1 else parts[0]
+            return f"שאלה נוספת (אופציונלית) – ספרו לי: האם רלוונטי לכם משהו מבין אלה? {joined}."
         return "יש עוד פרטים שתרצו לשתף?"
     else:
         phrases = {
@@ -213,7 +214,8 @@ def build_combined_level_b_question(missing_keys, lang='he'):
         }
         parts = [phrases[k] for k in missing_keys if k in phrases]
         if parts:
-            return f"One additional optional question – tell me about: {parts[0]}."
+            joined = " or ".join([", ".join(parts[:-1]), parts[-1]]) if len(parts) > 1 else parts[0]
+            return f"One additional optional question – tell me if any of these are relevant: {joined}."
         return "Anything else you'd like to share?"
 
 def get_next_question_and_options(text_params, lang='he'):
