@@ -134,7 +134,7 @@ You MUST use the `extract_dog_preferences` tool.
                         },
                         "extracted_parameters": {
                             "type": "object",
-                            "description": "The parameters extracted from the user's text.",
+                            "description": "The parameters extracted from the user's text. CRITICAL: ONLY include a property here if the user explicitly mentioned it. DO NOT include keys for unmentioned properties. DO NOT guess neutral values for unmentioned properties.",
                             "properties": {
                                 "a1_adapts_well_to_apartment_living": {"type": "integer"},
                                 "a4_tolerates_being_alone": {"type": "integer"},
