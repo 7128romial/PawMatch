@@ -693,26 +693,26 @@ def chat(parsed_data=None):
     # user never discussed barking). Without this we'd show that message and dead-end
     # with no question and no results. Default the missing essentials and proceed.
     if state == 'state_d' and next_state == 'step_4_essential':
-        for p in level_a:
-            if p not in session['text_params']:
-                session['text_params'][p] = 3
-                session['confidence_penalty'] = True
-        next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
-        session['state'] = next_state
-
-    if next_state == 'state_q':
-        return process_recommendation(selects, session['text_params'])
+        # LLM hallucinated state_d early. Demote state and force backend question.
+        state = 'state_c'
+        response_text = next_q
+    elif next_state == 'step_5_soft':
+        response_text = next_q
     else:
         response_text = next_question_from_llm if next_question_from_llm else next_q
-        if user_message and response_text:
-            ch = session.get('chat_history', [])
-            ch.append({"role": "user", "content": user_message})
-            ch.append({"role": "assistant", "content": response_text})
-            session['chat_history'] = ch[-6:]
-            
-        return jsonify({
-            "response": response_text,
-            "options": next_opts,
+        
+    if next_state == 'state_q':
+        return process_recommendation(selects, session['text_params'])
+    
+    if user_message and response_text:
+        ch = session.get('chat_history', [])
+        ch.append({"role": "user", "content": user_message})
+        ch.append({"role": "assistant", "content": response_text})
+        session['chat_history'] = ch[-6:]
+        
+    return jsonify({
+        "response": response_text,
+        "options": next_opts,
             "session_data": build_session_data()
         })
 
