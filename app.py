@@ -251,9 +251,9 @@ def get_next_question_and_options(text_params, lang='he'):
     missing_level_a = [p for p in level_a if p not in text_params]
     
     if not text_params.get('welcome_done'):
-        question = ("מצוין, סיימנו עם הבסיס. עכשיו, כדי שנוכל להתאים לכם את החבר המושלם - ספרו לי קצת במילים שלכם: איפה אתם גרים (דירה/בית עם חצר)? והאם יש ילדים בבית?" 
+        question = ("ספר/י לי קצת על עצמך ועל אורח החיים שלך, ככל שתפרט/י יותר, ההתאמה תהיה מדויקת יותר" 
                     if lang == 'he' else 
-                    "Excellent, the basics are done. Now, to help us find the perfect match, tell me in your own words: where do you live (apartment/house)? And are there any kids at home?")
+                    "Tell me a bit about yourself and your lifestyle. The more details you provide, the more accurate the match will be.")
         return question, None, 'step_2_welcome'
 
     # Step 4: Combined Level A question
@@ -562,7 +562,7 @@ def chat(parsed_data=None):
     ]
     missing_level_b = [p for p in level_b if p not in session['text_params']]
     
-    active_param = missing_level_a[0] if missing_level_a else (missing_level_b[0] if missing_level_b else None)
+    active_params_str = ", ".join(missing_level_a) if missing_level_a else None
     
     is_greeting = is_greeting_message(user_message)
     if is_greeting:
@@ -587,7 +587,7 @@ def chat(parsed_data=None):
 
     retry_count = session.get('param_retry_count', 0)
     chat_history = session.get('chat_history', [])
-    nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_param, lang=lang, retry_count=retry_count, chat_history=chat_history)
+    nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_params_str, lang=lang, retry_count=retry_count, chat_history=chat_history)
     
     if nlp_result.get("state") == "error":
         err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
@@ -662,20 +662,19 @@ def chat(parsed_data=None):
                 session['text_params'][k] = v
             
     # Retry tracking for the active parameter
-    if active_param:
-        if active_param in session['text_params']:
+    if active_params_str:
+        # If all currently asked parameters are now extracted, reset retry count
+        if all(p in session['text_params'] for p in missing_level_a):
             session['param_retry_count'] = 0
-            val = session['text_params'][active_param]
-            session['confidence_penalty'] = session.get('confidence_penalty', False) or (val == 3 and retry_count >= 1) # Track medium confidence
+            session['confidence_penalty'] = session.get('confidence_penalty', False) or any(session['text_params'][p] == 3 for p in missing_level_a) and retry_count >= 1
         else:
             new_retry = retry_count + 1
             session['param_retry_count'] = new_retry
-            # Anti-loop safety net: if the active parameter still couldn't be extracted
-            # after repeated attempts (the LLM kept asking other things instead of this
-            # one), assign a neutral value (3) so the conversation can progress to results
-            # instead of looping forever on the same missing parameter.
             if new_retry >= 2:
-                session['text_params'][active_param] = 3
+                # Force fill all missing Tier A
+                for p in missing_level_a:
+                    if p not in session['text_params']:
+                        session['text_params'][p] = 3
                 session['confidence_penalty'] = True
                 session['param_retry_count'] = 0
 

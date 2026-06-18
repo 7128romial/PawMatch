@@ -178,10 +178,10 @@ def recommend_dogs(selects, text_params, lang='he'):
                "We'd be happy to help if anything changes in the future, please come back!")
         return {"type": "result", "dogs": [], "message": msg}
 
-    # Take top 3 (is_anomaly from the Isolation Forest is preserved on each row - Section #11)
-    top_3 = filtered_df.head(3)
+    # Take top 5 (is_anomaly from the Isolation Forest is preserved on each row - Section #11)
+    top_5 = filtered_df.head(5)
     dogs_list = []
-    for _, d in top_3.iterrows():
+    for _, d in top_5.iterrows():
         d_dict = d.to_dict()
         d_dict['match_score'] = int(round(d['match_score']))
         dogs_list.append(clean_dict(d_dict))
