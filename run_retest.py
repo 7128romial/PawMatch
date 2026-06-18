@@ -33,7 +33,7 @@ def show(tag, data):
         print(f"  >>> {len(data['dogs'])} DOGS RETURNED:")
         for d in data["dogs"]:
             print(f"     - {d.get('breed')} | score {d.get('match_score')} | "
-                  f"cluster {d.get('cluster')} | is_outlier {d.get('is_outlier')}")
+                  f"cluster {d.get('cluster')} | is_anomaly {d.get('is_anomaly')}")
             mr = (d.get("match_reason") or "").replace("\n", " ")
             print(f"       match_reason: {mr[:280]}")
     return data
@@ -116,9 +116,9 @@ def scenario_2_direct():
     rec = m.recommend_dogs(selects={}, text_params={"breed_preference": "Basenji"}, lang="he")
     dogs = rec.get("dogs", [])
     print(f"  {len(dogs)} dogs for breed_preference=Basenji")
-    flagged = [d for d in dogs if d.get("is_outlier") == -1 or d.get("cluster") == 4]
+    flagged = [d for d in dogs if d.get("is_anomaly") == -1 or d.get("cluster") == 4]
     for d in dogs:
-        print(f"     - {d.get('breed')} | cluster {d.get('cluster')} | is_outlier {d.get('is_outlier')}")
+        print(f"     - {d.get('breed')} | cluster {d.get('cluster')} | is_anomaly {d.get('is_anomaly')}")
     ok = len(dogs) > 0 and len(flagged) > 0
     print("  CHECK at least one returned dog is flagged anomalous:", "PASS" if ok else "FAIL")
     return ok
