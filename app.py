@@ -171,6 +171,7 @@ def build_combined_level_a_question(missing_keys, lang='he'):
             'e3_exercise_needs': "רמת הפעילות הפיזית או הטיולים שתוכלו להעניק לכלב",
             'a4_tolerates_being_alone': "כמה שעות בערך הכלב יישאר לבד ביום",
             'd5_tendency_to_bark_or_howl': "האם רעש או נביחות יפריעו לכם",
+            'b2_incredibly_kid_friendly_dogs': "האם הכלב יפגוש ילדים קטנים ביומיום",
             'c1_amount_of_shedding': "האם נשירת פרווה/אלרגיות מהוות שיקול עבורכם"
         }
         parts = [phrases[k] for k in missing_keys if k in phrases]
@@ -183,6 +184,7 @@ def build_combined_level_a_question(missing_keys, lang='he'):
             'e3_exercise_needs': "the exercise level or walks you can provide for the dog",
             'a4_tolerates_being_alone': "how many hours the dog will be left alone daily",
             'd5_tendency_to_bark_or_howl': "whether barking or noise will be an issue for you",
+            'b2_incredibly_kid_friendly_dogs': "if you have young kids at home",
             'c1_amount_of_shedding': "whether shedding or allergies are a concern for you"
         }
         parts = [phrases[k] for k in missing_keys if k in phrases]
@@ -195,7 +197,6 @@ def build_combined_level_b_question(missing_keys, lang='he'):
         phrases = {
             'c1_amount_of_shedding': "האם נשירת פרווה/אלרגיות מהוות שיקול עבורכם",
             'b3_dog_friendly': "האם יש לכם כלבים נוספים בבית",
-            'b2_incredibly_kid_friendly_dogs': "האם הכלב יפגוש ילדים קטנים ביומיום",
             'd1_easy_to_train': "האם חשוב לכם שהכלב יהיה קל לאילוף",
             'a2_good_for_novice_owners': "האם יש לכם ניסיון קודם בגידול כלב"
         }
@@ -207,7 +208,6 @@ def build_combined_level_b_question(missing_keys, lang='he'):
         phrases = {
             'c1_amount_of_shedding': "whether shedding or allergies are a concern for you",
             'b3_dog_friendly': "whether you have other dogs at home",
-            'b2_incredibly_kid_friendly_dogs': "if you have young kids at home",
             'd1_easy_to_train': "whether ease of training is important to you",
             'a2_good_for_novice_owners': "your experience level with dogs (is this your first dog)"
         }
@@ -244,7 +244,8 @@ def get_next_question_and_options(text_params, lang='he'):
         'a1_adapts_well_to_apartment_living',
         'e3_exercise_needs',
         'a4_tolerates_being_alone',
-        'd5_tendency_to_bark_or_howl'
+        'd5_tendency_to_bark_or_howl',
+        'b2_incredibly_kid_friendly_dogs'
     ]
     missing_level_a = [p for p in level_a if p not in text_params]
     
@@ -261,10 +262,9 @@ def get_next_question_and_options(text_params, lang='he'):
 
     # Step 5: Combined Level B question
     level_b = [
-        'b3_dog_friendly',
-        'b2_incredibly_kid_friendly_dogs',
-        'd1_easy_to_train',
         'c1_amount_of_shedding',
+        'b3_dog_friendly',
+        'd1_easy_to_train',
         'a2_good_for_novice_owners'
     ]
     missing_level_b = [p for p in level_b if p not in text_params]
