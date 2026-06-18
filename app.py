@@ -251,9 +251,9 @@ def get_next_question_and_options(text_params, lang='he'):
     missing_level_a = [p for p in level_a if p not in text_params]
     
     if not text_params.get('welcome_done'):
-        question = ("מצוין, סיימנו עם הבסיס. עכשיו, כדי שנוכל להתאים לכם את החבר המושלם - ספרו לי קצת במילים שלכם: איפה אתם גרים (דירה/בית עם חצר)?" 
+        question = ("מצוין, סיימנו עם הבסיס. עכשיו, כדי שנוכל להתאים לכם את החבר המושלם - ספרו לי קצת במילים שלכם: איפה אתם גרים (דירה/בית עם חצר)? והאם יש ילדים בבית?" 
                     if lang == 'he' else 
-                    "Excellent, the basics are done. Now, to help us find the perfect match, tell me in your own words: where do you live (apartment/house)?")
+                    "Excellent, the basics are done. Now, to help us find the perfect match, tell me in your own words: where do you live (apartment/house)? And are there any kids at home?")
         return question, None, 'step_2_welcome'
 
     # Step 4: Combined Level A question
