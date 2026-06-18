@@ -697,7 +697,6 @@ def chat(parsed_data=None):
             if p not in session['text_params']:
                 session['text_params'][p] = 3
                 session['confidence_penalty'] = True
-        session['text_params']['soft_done'] = True
         next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
         session['state'] = next_state
 
