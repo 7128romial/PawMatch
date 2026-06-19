@@ -257,15 +257,21 @@ def generate_explanations(dogs, user_params, user_original_text="", breed_reques
         except Exception:
             pass
 
-    # הכנת כרטיס המידע המלא עבור כל כלב שנבחר
+    # הכנת כרטיס המידע המלא עבור כל כלב שנבחר. כל כלב מקבל "id" ייחודי (אינדקס) כדי
+    # שהמיפוי בחזרה יהיה לפי הכלב הספציפי ולא לפי הגזע (שני כלבים מאותו גזע קיבלו עד כה
+    # אותו הסבר בדיוק). מצורפים גם גיל/משקל/צבע כדי שההסבר יהיה ייחודי לכל פרט.
     dogs_info = []
-    for d in dogs:
+    for i, d in enumerate(dogs):
         breed_key = str(d.get("breed", "")).lower().strip()
         breed_desc = breed_desc_map.get(breed_key, "מידע כללי על תכונות הגזע אינו זמין כעת." if lang == 'he' else "Description not available.")
 
         dogs_info.append({
+            "id": i,
             "name": d.get("name", "הכלב" if lang == 'he' else "the dog"),
             "breed": d.get("breed"),
+            "age_years": d.get("age_years"),
+            "weight_kg": d.get("weight_kg"),
+            "color": d.get("color"),
             "breed_description": breed_desc,
             "match_score": d.get("match_score"),
             "cluster": d.get("cluster"),
@@ -302,11 +308,12 @@ User Original Free Text: "{user_original_text}"
 Extracted Structured Parameters: {json.dumps(user_params, ensure_ascii=False)}
 Recommended Dogs Data: {json.dumps(dogs_info, ensure_ascii=False)}
 
-Generate the output JSON with the exact key "explanations" containing a list of objects.
+Generate the output JSON with the exact key "explanations" containing a list of objects — EXACTLY ONE object per dog in the Recommended Dogs Data, in the same order.
 Each object MUST contain these exact keys:
-- "breed": the dog's breed, copied verbatim from the "breed" field in the provided Recommended Dogs Data (required for downstream mapping).
+- "id": the integer "id" copied verbatim from the matching dog in the Recommended Dogs Data (REQUIRED for downstream mapping — each dog has a distinct id).
+- "breed": the dog's breed, copied verbatim from the "breed" field.
 - "name": the dog's name.
-- "match_reason": a 1-2 sentence explanation linking the dog's traits to the user's specific lifestyle from their original free text.
+- "match_reason": a 1-2 sentence explanation linking THIS specific dog's traits to the user's lifestyle. IMPORTANT: each dog gets its OWN distinct reason — when two dogs share a breed, differentiate them by referring to that individual dog (its name, age, weight, or color) so no two match_reason texts are identical.
 - "breed_info": a 1-2 sentence breed description based strictly on the provided "breed_description". Do NOT invent facts, and explicitly mention that this breed information is sourced from DogTime.com.
 """
 
