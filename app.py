@@ -271,20 +271,20 @@ def get_next_question_and_options(text_params, lang='he'):
         'd1_easy_to_train',
         'a2_good_for_novice_owners'
     ]
-    missing_level_b = [p for p in level_b if p not in text_params]
+    # Split the optional Tier B topics across two messages so we never dump all of
+    # them at once. The list is partitioned into two FIXED halves, so each topic is
+    # asked in exactly one round and is NEVER repeated — round 1 asks only the second
+    # half, even if the user left some first-half topics unanswered (those just stay
+    # missing and default to a neutral 3). soft_round is capped at 2.
+    half = (len(level_b) + 1) // 2
+    fixed_halves = [level_b[:half], level_b[half:]]
     soft_round = text_params.get('soft_round', 0)
-    if missing_level_b and not text_params.get('soft_done') and soft_round < 2:
-        # Split the optional Tier B topics across two messages so we never dump
-        # all of them at once. Round 0 asks the first half; round 1 asks whatever
-        # is still missing. soft_round is capped at 2 to guarantee max two asks.
-        if soft_round == 0 and len(missing_level_b) > 1:
-            half = (len(missing_level_b) + 1) // 2
-            batch = missing_level_b[:half]
-        else:
-            batch = missing_level_b
-        question = build_combined_level_b_question(batch, lang, soft_round=soft_round)
-        options = ["הצג תוצאות עכשיו"] if lang == 'he' else ["Show Results Now"]
-        return question, options, 'step_5_soft'
+    if not text_params.get('soft_done') and soft_round < 2:
+        batch = [p for p in fixed_halves[soft_round] if p not in text_params]
+        if batch:
+            question = build_combined_level_b_question(batch, lang, soft_round=soft_round)
+            options = ["הצג תוצאות עכשיו"] if lang == 'he' else ["Show Results Now"]
+            return question, options, 'step_5_soft'
 
     # Everything is complete!
     return None, None, 'state_q'

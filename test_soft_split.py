@@ -33,16 +33,19 @@ check("asks about kids", "ילדים קטנים" in q)
 check("does NOT ask about training yet", "קל לאילוף" not in q)
 check("does NOT ask about experience yet", "ניסיון קודם" not in q)
 
-print("\n--- Round 2 (soft_round=1): should ask the remaining topics ---")
-# Simulate: user answered the first-batch topics, round advanced to 1.
+print("\n--- Round 2 (soft_round=1): asks ONLY the second half, never re-asks round 1 ---")
+# Reproduces the screenshot: in round 1 the user answered ONLY the allergy (c1),
+# leaving b3 (other dogs) and b2 (kids) unanswered. Round 2 must NOT re-ask those.
 p2 = dict(base)
-p2.update({"c1_amount_of_shedding": 2, "b3_dog_friendly": 5, "b2_incredibly_kid_friendly_dogs": 1})
+p2.update({"c1_amount_of_shedding": 1})  # only the allergy was answered
 p2["soft_round"] = 1
 q2, opts2, state2 = get_next_question_and_options(p2, 'he')
 print(f"  Q: {q2}")
 check("state is step_5_soft", state2 == 'step_5_soft', f"-> {state2}")
 check("asks about training", "קל לאילוף" in q2)
 check("asks about experience", "ניסיון קודם" in q2)
+check("does NOT re-ask about other dogs", "כלבים נוספים" not in q2)
+check("does NOT re-ask about kids", "ילדים קטנים" not in q2)
 check("uses the 'final question' intro", "ולסיום" in q2, f"-> {q2[:30]}")
 
 print("\n--- After round 2 (soft_round=2): no more soft, go to results ---")

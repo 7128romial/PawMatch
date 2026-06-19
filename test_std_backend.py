@@ -11,21 +11,29 @@ def test_tc_server_01_data_integrity():
     assert ml_engine.df_final is not None, "Data should be loaded"
     assert len(ml_engine.df_final) == 3000, f"Expected 3000 rows, got {len(ml_engine.df_final)}"
 
-# TC_SERVER_02: Dynamic Rescaling
-def test_tc_server_02_dynamic_rescaling():
-    # Send user vector without b2 and b3
+# TC_SERVER_02: Neutral Fill for unanswered traits (no dynamic rescaling)
+def test_tc_server_02_neutral_fill():
+    # Send a user vector that omits Tier B traits (b2, b3, etc.).
+    # The engine fills every missing trait with a neutral value of 3 and keeps
+    # the full weight matrix (it does NOT drop/rescale the missing traits).
     text_params = {
         'a1_adapts_well_to_apartment_living': 5,
         'e3_exercise_needs': 3,
         'a4_tolerates_being_alone': 3,
         'd5_tendency_to_bark_or_howl': 3
     }
-    row = ml_engine.df_final.iloc[0]
-    
-    # Calculate score. The internal active_params should only include the Level A and present params.
-    # Level A sum: 0.18 + 0.16 + 0.13 + 0.11 = 0.58.
-    score = ml_engine.calculate_weighted_score(row, text_params)
-    assert score >= 0 and score <= 100.0, "Score should be normalized between 0 and 100"
+    df_one = ml_engine.df_final.iloc[[0]]  # single-row DataFrame
+    scores = ml_engine.calculate_weighted_cosine_similarity(text_params, df_one)
+    assert len(scores) == 1
+    assert 0 <= scores[0] <= 100.0, "Score should be normalized between 0 and 100"
+
+    # Explicitly confirm missing == neutral 3: a user who omits a trait must score
+    # identically to a user who explicitly set that trait to 3.
+    explicit = dict(text_params)
+    for col in ml_engine.behavioral_cols:
+        explicit.setdefault(col, 3)
+    scores_explicit = ml_engine.calculate_weighted_cosine_similarity(explicit, df_one)
+    assert abs(scores[0] - scores_explicit[0]) < 1e-6, "Missing traits must be treated as a neutral 3"
 
 # TC_SERVER_03: Schema Mismatch
 def test_tc_server_03_schema_mismatch():
@@ -34,10 +42,11 @@ def test_tc_server_03_schema_mismatch():
         'a1_adapts_well_to_apartment_living': "high", # Invalid string
         'e3_exercise_needs': 5
     }
-    # It shouldn't crash, safe_int should handle it and fallback to default mapping (0.85 match for missing/invalid)
-    row = ml_engine.df_final.iloc[0]
-    score = ml_engine.calculate_weighted_score(row, text_params)
-    assert score is not None
+    # It shouldn't crash; safe_int should catch the invalid string and fall back to the neutral default (3).
+    df_one = ml_engine.df_final.iloc[[0]]
+    scores = ml_engine.calculate_weighted_cosine_similarity(text_params, df_one)
+    assert scores is not None and len(scores) == 1
+    assert 0 <= scores[0] <= 100.0
 
 # TC_SERVER_04: Filter Starvation
 def test_tc_server_04_filter_starvation():
@@ -69,7 +78,7 @@ def test_tc_edge_01_breed_override():
     dogs = result.get("dogs", [])
     # Should return small dogs
     if dogs:
-        assert dogs[0]["size"] == "Small", "Fallback should respect the hard filter 'Small'"
+        assert str(dogs[0]["size"]).lower() == "small", "Fallback should respect the hard filter 'Small'"
         
 # TC_EDGE_02: Basenji Outlier (Cluster 4)
 def test_tc_edge_02_basenji_outlier():
