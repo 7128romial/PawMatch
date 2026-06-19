@@ -714,14 +714,15 @@ def chat(parsed_data=None):
     next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
     session['state'] = next_state
 
-    # Reconcile a model/backend disagreement: the model declared it has all the
-    # essential info (state_d) and tends to reply "results coming soon", but the
-    # backend is still missing a Tier A trait it never managed to extract (e.g. the
-    # user never discussed barking). Without this we'd show that message and dead-end
-    # with no question and no results. Default the missing essentials and proceed.
-    if state == 'state_d' and next_state == 'step_4_essential':
-        # LLM hallucinated state_d early. Demote state and force backend question.
-        state = 'state_c'
+    # While any mandatory Tier A trait is still missing, the question shown MUST be the
+    # backend's focused question for that specific trait. The LLM often jumps ahead to
+    # Tier B / soft topics (other pets, kids) or declares state_d ("results coming soon")
+    # before the essentials are gathered; using its next_question here would silently skip
+    # a mandatory question. So for step_4_essential we always use the deterministic next_q.
+    if next_state == 'step_4_essential':
+        if state == 'state_d':
+            # LLM hallucinated completion early; demote so results are not triggered.
+            state = 'state_c'
         response_text = next_q
     elif next_state == 'step_5_soft':
         response_text = next_q
