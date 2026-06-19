@@ -165,30 +165,33 @@ def build_session_data():
     }
 
 def build_combined_level_a_question(missing_keys, lang='he'):
+    # One focused, natural, single-direction question per mandatory trait. The warm
+    # human touch is added separately via the LLM `acknowledgment` prepended in chat(),
+    # so these stay clear and unambiguous without the robotic repeated prefix.
     if lang == 'he':
-        phrases = {
-            'a1_adapts_well_to_apartment_living': "סביבת המגורים שלכם (דירה, בית עם חצר)",
-            'e3_exercise_needs': "רמת הפעילות הפיזית או הטיולים שתוכלו להעניק לכלב",
-            'a4_tolerates_being_alone': "כמה שעות בערך הכלב יישאר לבד ביום",
-            'd5_tendency_to_bark_or_howl': "האם רעש או נביחות יפריעו לכם",
-            'c1_amount_of_shedding': "האם נשירת פרווה/אלרגיות מהוות שיקול עבורכם"
+        questions = {
+            'a1_adapts_well_to_apartment_living': "איפה אתם גרים — דירה, או בית עם חצר?",
+            'e3_exercise_needs': "כמה זמן ביום בא לכם להקדיש לטיולים ולשחרור אנרגיה עם הכלב?",
+            'a4_tolerates_being_alone': "כמה שעות בערך הכלב יישאר לבד בבית ביום רגיל?",
+            'd5_tendency_to_bark_or_howl': "עד כמה חשוב לכם שהכלב יהיה שקט ולא נביחן?",
+            'c1_amount_of_shedding': "האם נשירת פרווה או אלרגיות מטרידות אתכם?"
         }
-        parts = [phrases[k] for k in missing_keys if k in phrases]
-        if parts:
-            return f"כדי לדייק בהתאמה, ספרו לי קצת על {parts[0]}."
-        return "כדי לדייק בהתאמה, ספרו לי קצת על אורח החיים שלכם."
+        for k in missing_keys:
+            if k in questions:
+                return questions[k]
+        return "ספרו לי עוד קצת על אורח החיים שלכם."
     else:
-        phrases = {
-            'a1_adapts_well_to_apartment_living': "your living environment (apartment, house with yard)",
-            'e3_exercise_needs': "the exercise level or walks you can provide for the dog",
-            'a4_tolerates_being_alone': "how many hours the dog will be left alone daily",
-            'd5_tendency_to_bark_or_howl': "whether barking or noise will be an issue for you",
-            'c1_amount_of_shedding': "whether shedding or allergies are a concern for you"
+        questions = {
+            'a1_adapts_well_to_apartment_living': "Where do you live — an apartment, or a house with a yard?",
+            'e3_exercise_needs': "How much time a day would you like to spend on walks and burning energy with the dog?",
+            'a4_tolerates_being_alone': "Roughly how many hours will the dog be left alone at home on a typical day?",
+            'd5_tendency_to_bark_or_howl': "How important is it to you that the dog is quiet and not a barker?",
+            'c1_amount_of_shedding': "Do shedding or allergies bother you?"
         }
-        parts = [phrases[k] for k in missing_keys if k in phrases]
-        if parts:
-            return f"To make the best match, tell me a bit about {parts[0]}."
-        return "To make the best match, tell me a bit about your lifestyle."
+        for k in missing_keys:
+            if k in questions:
+                return questions[k]
+        return "Tell me a bit more about your lifestyle."
 
 def build_combined_level_b_question(missing_keys, lang='he', soft_round=0):
     if lang == 'he':
@@ -614,7 +617,8 @@ def chat(parsed_data=None):
     state = nlp_result.get('state')
     extracted = nlp_result.get('extracted_parameters', {})
     next_question_from_llm = nlp_result.get('next_question', '')
-    
+    acknowledgment = (nlp_result.get('acknowledgment') or '').strip()
+
     if state == "state_e":
         fallback_msg = ("Adopting a dog is a significant and long-term responsibility (10-15 years) and is not recommended solely out of boredom or as a temporary solution. "
                "A dog is a living soul that needs care, time, and lots of love. If you are ready for this commitment, tell me about your lifestyle and we can begin the match.") if lang == 'en' else \
@@ -723,9 +727,11 @@ def chat(parsed_data=None):
         if state == 'state_d':
             # LLM hallucinated completion early; demote so results are not triggered.
             state = 'state_c'
-        response_text = next_q
+        # Backend controls WHICH mandatory question (reliable order, no skipping);
+        # the LLM's warm acknowledgment is prepended so it still sounds human.
+        response_text = f"{acknowledgment}\n\n{next_q}" if acknowledgment else next_q
     elif next_state == 'step_5_soft':
-        response_text = next_q
+        response_text = f"{acknowledgment}\n\n{next_q}" if acknowledgment else next_q
     else:
         response_text = next_question_from_llm if next_question_from_llm else next_q
         

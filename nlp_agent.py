@@ -160,6 +160,10 @@ You MUST use the `extract_dog_preferences` tool.
                         "next_question": {
                             "type": "string",
                             "description": f"The conversational response or next question to ask the user. You MUST write this strictly in {'Hebrew (עברית)' if lang == 'he' else 'English'} regardless of what language or characters the user types!"
+                        },
+                        "acknowledgment": {
+                            "type": "string",
+                            "description": f"A short (1 sentence), warm, human, empathetic reflection of what the user JUST said — e.g. acknowledging their living situation, energy level, or concern. It must NOT contain any question and must NOT introduce a new topic; it only mirrors the user's last message warmly so the bot does not sound robotic. Write it strictly in {'Hebrew (עברית)' if lang == 'he' else 'English'}. Leave empty if the user said nothing meaningful to reflect."
                         }
                     },
                     "required": ["state", "extracted_parameters", "next_question"]
@@ -185,6 +189,9 @@ An "Active Parameter" above means the backend is STILL WAITING for this specific
 - If `retry_count == 0`: ask about the single Active Parameter naturally.
 - If `retry_count >= 1`: the user has already dodged/been vague. Ask ONE more time using a COMPLETELY DIFFERENT angle/phrasing.
 - CRITICAL RULE: NEVER extract a neutral value (like 3) for an Active Parameter just because the user ignored it or was vague. If the user ignored a parameter, leave it COMPLETELY OMITTED from `extracted_parameters`. The backend will automatically handle anti-loop protection.
+
+# WARM ACKNOWLEDGMENT (Human Tone — Anti-Robotic)
+You MUST always fill the `acknowledgment` field with ONE short, warm, human sentence that reflects what the user just said (e.g. "איזה כיף, דירה זה בית מושלם לכלב חברותי 🐾" or "הבנתי, אנרגיה גבוהה — נמצא לכם חבר לטיולים!"). The backend prepends this to the actual question, so the bot sounds empathetic instead of robotic. RULES: keep it to ONE sentence, make it specific to their last message, NEVER put a question or a new topic inside `acknowledgment`, and vary the wording every turn (do not reuse the same opener twice).
 
 # CAPTURE VOLUNTEERED INFO (Memory Rule)
 Even while focusing your QUESTION on the Active Parameter, you MUST still extract into `extracted_parameters` ANY other trait the user volunteers at any point. Examples:
