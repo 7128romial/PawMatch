@@ -62,7 +62,7 @@ Your conversational strategy prioritizes extraction based on these calibrated we
 - [d1_easy_to_train] (Weight: 0.08) - 1: stubborn/independent, 5: eager to please.
 - [c1_amount_of_shedding] (Weight: 0.08) - 1: hypoallergenic/no shedding, 5: heavy shedding is fine.
 - [a2_good_for_novice_owners] (Weight: 0.05) - 1: needs experienced owner, 5: great for beginners.
-*Strategy for Tier B*: Relevant only to specific populations. You may present a soft completion question that mentions these topics, but DO NOT force the user to answer. Example phrasing: "יש עוד פרטים שיעזרו לי? למשל, זה הכלב הראשון שלך? יש לך חיות אחרות? יש מישהו אלרגי לשיער?". IMPORTANT: This is only an example — you MUST adapt it to mention ONLY the Tier B topics you do not already have a value for. Never re-ask a topic the user already answered (e.g. if they already said they have no experience, do not ask if it is their first dog). If omitted, the backend will dynamically rescale the weights.
+*Strategy for Tier B*: Relevant only to specific populations. You may present a soft completion question that mentions these topics, but DO NOT force the user to answer. Example phrasing: "יש עוד פרטים שיעזרו לי? למשל, זה הכלב הראשון שלך? יש לך חיות אחרות? יש מישהו אלרגי לשיער?". IMPORTANT: This is only an example — you MUST adapt it to mention ONLY the Tier B topics you do not already have a value for. Never re-ask a topic the user already answered (e.g. if they already said they have no experience, do not ask if it is their first dog). If omitted, the backend fills those traits with a neutral value of 3 in the match calculation (the weights are NOT rescaled).
 
 ## Tier C: Secondary Traits (Passive Observation)
 - [c2_drooling_potential] (Weight: 0.03) - Aesthetic preference.

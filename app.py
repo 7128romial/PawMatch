@@ -190,7 +190,7 @@ def build_combined_level_a_question(missing_keys, lang='he'):
             return f"To make the best match, tell me a bit about {parts[0]}."
         return "To make the best match, tell me a bit about your lifestyle."
 
-def build_combined_level_b_question(missing_keys, lang='he'):
+def build_combined_level_b_question(missing_keys, lang='he', soft_round=0):
     if lang == 'he':
         phrases = {
             'c1_amount_of_shedding': "האם נשירת פרווה/אלרגיות מהוות שיקול עבורכם",
@@ -202,7 +202,8 @@ def build_combined_level_b_question(missing_keys, lang='he'):
         parts = [phrases[k] for k in missing_keys if k in phrases]
         if parts:
             joined = " או ".join([", ".join(parts[:-1]), parts[-1]]) if len(parts) > 1 else parts[0]
-            return f"שאלה נוספת (אופציונלית) – ספרו לי: האם רלוונטי לכם משהו מבין אלה? {joined}."
+            intro = "ולסיום, עוד שאלה אחת קצרה (אופציונלית)" if soft_round >= 1 else "שאלה נוספת (אופציונלית)"
+            return f"{intro} – ספרו לי: האם רלוונטי לכם משהו מבין אלה? {joined}."
         return "יש עוד פרטים שתרצו לשתף?"
     else:
         phrases = {
@@ -215,7 +216,8 @@ def build_combined_level_b_question(missing_keys, lang='he'):
         parts = [phrases[k] for k in missing_keys if k in phrases]
         if parts:
             joined = " or ".join([", ".join(parts[:-1]), parts[-1]]) if len(parts) > 1 else parts[0]
-            return f"One additional optional question – tell me if any of these are relevant: {joined}."
+            intro = "And finally, one last short optional question" if soft_round >= 1 else "One additional optional question"
+            return f"{intro} – tell me if any of these are relevant: {joined}."
         return "Anything else you'd like to share?"
 
 def get_next_question_and_options(text_params, lang='he'):
@@ -270,8 +272,17 @@ def get_next_question_and_options(text_params, lang='he'):
         'a2_good_for_novice_owners'
     ]
     missing_level_b = [p for p in level_b if p not in text_params]
-    if missing_level_b and not text_params.get('soft_done'):
-        question = build_combined_level_b_question(missing_level_b, lang)
+    soft_round = text_params.get('soft_round', 0)
+    if missing_level_b and not text_params.get('soft_done') and soft_round < 2:
+        # Split the optional Tier B topics across two messages so we never dump
+        # all of them at once. Round 0 asks the first half; round 1 asks whatever
+        # is still missing. soft_round is capped at 2 to guarantee max two asks.
+        if soft_round == 0 and len(missing_level_b) > 1:
+            half = (len(missing_level_b) + 1) // 2
+            batch = missing_level_b[:half]
+        else:
+            batch = missing_level_b
+        question = build_combined_level_b_question(batch, lang, soft_round=soft_round)
         options = ["הצג תוצאות עכשיו"] if lang == 'he' else ["Show Results Now"]
         return question, options, 'step_5_soft'
 
@@ -689,8 +700,13 @@ def chat(parsed_data=None):
     if current_session_state == 'step_2_welcome':
         session['text_params']['welcome_done'] = True
     elif current_session_state == 'step_5_soft':
-        session['text_params']['soft_done'] = True
-        
+        # The optional Tier B questions are split across two messages. Advance the
+        # round counter; only mark soft_done once both rounds have been asked, so
+        # get_next_question_and_options can serve the second batch in between.
+        session['text_params']['soft_round'] = session['text_params'].get('soft_round', 0) + 1
+        if session['text_params']['soft_round'] >= 2:
+            session['text_params']['soft_done'] = True
+
     next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
     session['state'] = next_state
 
