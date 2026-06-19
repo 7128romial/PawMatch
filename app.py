@@ -573,7 +573,11 @@ def chat(parsed_data=None):
     ]
     missing_level_b = [p for p in level_b if p not in session['text_params']]
     
-    active_params_str = ", ".join(missing_level_a) if missing_level_a else None
+    # Ask the mandatory Tier A traits ONE AT A TIME (only the first still-missing one).
+    # Bundling two of them in a single question (e.g. "hours alone AND exercise") caused
+    # a single numeric answer like "2 hours alone" to be mis-attributed to both traits,
+    # so exercise (e3) could silently get a bogus value and never be asked.
+    active_params_str = missing_level_a[0] if missing_level_a else None
     
     is_greeting = is_greeting_message(user_message)
     if is_greeting:
