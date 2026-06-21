@@ -353,7 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') sendMessage(userInput.value.trim());
     });
 
-    // Feedback submission handler
     // Start over global handler
     window.handleStartOver = async function() {
         sessionStorage.removeItem('pawmatch_chat_history');
