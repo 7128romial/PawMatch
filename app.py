@@ -391,6 +391,23 @@ def _deterministic_tier_a(active_param, text):
             best_len, best_val = len(k), 1
     return best_val
 
+def looks_like_gibberish(text):
+    """Detect clearly unintelligible input (keyboard mash / symbol-only) so the bot can
+    ask the user to rephrase instead of silently advancing to the next question. Kept
+    deliberately conservative to avoid false-positives on real short answers: only a
+    symbol-only string, or a single long (>=8) letter run with very low character variety
+    (a hallmark of keyboard mash like 'עדגגעשגכעגכעגשכע'), is treated as gibberish."""
+    if not text:
+        return False
+    t = text.strip()
+    if not re.sub(r'[\s\W_]', '', t):   # nothing but punctuation/symbols ("...", "???")
+        return True
+    if ' ' not in t:                    # a single token, no spaces
+        letters = re.sub(r'[^A-Za-z֐-׿]', '', t)
+        if len(letters) >= 8 and len(set(letters)) / len(letters) < 0.6:
+            return True
+    return False
+
 @app.route('/api/chat', methods=['POST'])
 def chat(parsed_data=None):
     data = parsed_data if parsed_data is not None else (request.json or {})
@@ -454,6 +471,22 @@ def chat(parsed_data=None):
         )
         return jsonify({
             "response": abuse_warning,
+            "session_data": build_session_data()
+        })
+
+    # Unintelligible input (keyboard mash / symbols only): ask to rephrase rather than
+    # silently advancing to the next question. Button labels and real short answers are
+    # never long low-variety single tokens, so they are not affected.
+    if looks_like_gibberish(user_message):
+        rephrase_msg = (
+            "I couldn't quite understand that. Could you rephrase it in a few words? "
+            "For example, tell me where you live, how much time you have for walks, or how long the dog will be home alone."
+            if lang == 'en' else
+            "לא הצלחתי להבין את מה שכתבת. אפשר לנסח את זה שוב בכמה מילים? "
+            "למשל, ספרו לי איפה אתם גרים, כמה זמן יש לכם לטיולים, או כמה שעות הכלב יישאר לבד בבית."
+        )
+        return jsonify({
+            "response": rephrase_msg,
             "session_data": build_session_data()
         })
 
