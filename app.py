@@ -348,6 +348,49 @@ def get_missing_critical(params):
     ]
     return [c for c in v3_criticals if c not in params]
 
+# Deterministic safety net for the four mandatory Tier A traits. The LLM occasionally
+# fails to extract a clear answer (e.g. a "כל היום" repeated across two turns confuses it
+# via the chat history), which makes the backend re-ask the IDENTICAL question. When the
+# LLM misses the trait we are actively asking about but the user gave a recognizable
+# magnitude/schedule answer, we map it here so the conversation always advances on a clear
+# reply. Keyed by active_param, because the same phrase ("כל היום") legitimately means a
+# HIGH value for different reasons per trait, and the backend knows which trait is active.
+_TIER_A_LEXICON = {
+    'a1_adapts_well_to_apartment_living': (
+        ['דירה', 'אין חצר', 'אין לי חצר', 'בלי חצר', 'קומה', 'apartment', 'flat'],          # high: suits apartment
+        ['בית פרטי', 'חצר', 'גינה', 'וילה', 'yard', 'garden', 'house'],                       # low: needs a yard
+    ),
+    'e3_exercise_needs': (
+        ['כל היום', 'המון', 'הרבה', 'לרוץ', 'ריצה', 'אוהב לטייל', 'אוהבת לטייל', 'all day', 'a lot', 'lots'],
+        ['מעט', 'כמעט ולא', 'אין לי זמן', 'אין זמן', 'עסוק', 'רק לצרכים', 'a little', 'barely', 'no time'],
+    ),
+    'a4_tolerates_being_alone': (
+        ['כל היום', 'בעבודה', 'עובד', 'עובדת', 'לא בבית', 'רוב היום', 'מבוקר עד ערב', 'at work', 'all day', 'away'],
+        ['עובד מהבית', 'עובדת מהבית', 'מהבית', 'תמיד איתי', 'אף פעם', 'מישהו בבית', 'אני בבית', 'work from home', 'never alone'],
+    ),
+    'd5_tendency_to_bark_or_howl': (
+        ['לא אכפת', 'לא מפריע', 'שמירה', 'בית פרטי', 'ok to bark', 'guard'],                  # high: barking is fine
+        ['שקט', 'רגיש', 'רגישים', 'שכנים', 'לא נביחן', 'נביחות מפריע', 'quiet', 'sensitive', 'neighbors'],  # low: needs quiet
+    ),
+}
+
+def _deterministic_tier_a(active_param, text):
+    """Map a clear free-text answer to a 1/5 value for the active Tier A trait, or None.
+    Longest matching keyword wins, so a negated phrase like "לא בבית" (high) correctly
+    beats the substring "בבית" (low) instead of being treated as ambiguous."""
+    if not text or active_param not in _TIER_A_LEXICON:
+        return None
+    t = text.strip().lower()
+    highs, lows = _TIER_A_LEXICON[active_param]
+    best_len, best_val = 0, None
+    for k in highs:
+        if k in t and len(k) > best_len:
+            best_len, best_val = len(k), 5
+    for k in lows:
+        if k in t and len(k) > best_len:
+            best_len, best_val = len(k), 1
+    return best_val
+
 @app.route('/api/chat', methods=['POST'])
 def chat(parsed_data=None):
     data = parsed_data if parsed_data is not None else (request.json or {})
@@ -618,6 +661,25 @@ def chat(parsed_data=None):
     extracted = nlp_result.get('extracted_parameters', {})
     next_question_from_llm = nlp_result.get('next_question', '')
     acknowledgment = (nlp_result.get('acknowledgment') or '').strip()
+
+    # Deterministic safety net: if the LLM missed the mandatory trait we are actively
+    # asking about, but the user gave a recognizable answer, fill it here so the backend
+    # never re-asks the identical question on a clear reply. The LLM clearly misread this
+    # turn, so we also drop its (likely wrong) acknowledgment to avoid a contradictory echo.
+    if (active_params_str and active_params_str not in extracted
+            and active_params_str not in session['text_params']):
+        fallback_val = _deterministic_tier_a(active_params_str, user_message)
+        if fallback_val is not None:
+            extracted[active_params_str] = fallback_val
+            acknowledgment = ''
+
+    # Never show the SAME warm acknowledgment two turns in a row. When the user repeats an
+    # identical answer ("כל היום"), the LLM tends to parrot the previous turn's reflection,
+    # which reads as if the bot is stuck repeating itself even though the question advanced.
+    if acknowledgment and acknowledgment == session.get('last_acknowledgment'):
+        acknowledgment = ''
+    if acknowledgment:
+        session['last_acknowledgment'] = acknowledgment
 
     if state == "state_e":
         fallback_msg = ("Adopting a dog is a significant and long-term responsibility (10-15 years) and is not recommended solely out of boredom or as a temporary solution. "
