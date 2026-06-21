@@ -719,10 +719,15 @@ def chat(parsed_data=None):
             })
 
         next_q, next_opts, next_state = get_next_question_and_options(session['text_params'], lang)
-        msg = next_question_from_llm if next_question_from_llm else (
-            f"I can only help with matching dogs for adoption. Let's get back to our matching:\n\n{next_q}"
+        # Always state the refusal EXPLICITLY and deterministically. We do not reuse the
+        # LLM's next_question here, because it tends to soft-pivot straight back to dog
+        # matching without telling the user it does not handle the off-topic subject.
+        msg = (
+            f"Sorry, but I'm a dog-adoption matching assistant only — I can't help with other topics "
+            f"(like the weather, recipes, code, or other animals). Let's get back to finding your perfect dog:\n\n{next_q}"
             if lang == 'en' else
-            f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נחזור להתאמה שלנו:\n\n{next_q}"
+            f"מצטער/ת, אבל אני סוכן להתאמת כלבים לאימוץ בלבד ואיני עוסק בנושאים אחרים "
+            f"(כמו מזג אוויר, מתכונים, קוד או חיות אחרות). בוא/י נחזור למצוא לך את הכלב המושלם:\n\n{next_q}"
         )
         if user_message and msg:
             ch = session.get('chat_history', [])
