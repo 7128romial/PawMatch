@@ -6,7 +6,10 @@ import json
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key or api_key == "your_api_key_here":
     raise ValueError("OPENAI_API_KEY environment variable is missing or placeholder. Cannot initialize OpenAI client.")
-client = OpenAI(api_key=api_key)
+# max_retries/timeout make the client resilient to transient OpenAI hiccups
+# (429 rate-limits, 5xx, network blips) so a one-off blip does not surface to the
+# user as a hard "connection error". The SDK retries with exponential backoff.
+client = OpenAI(api_key=api_key, max_retries=4, timeout=40.0)
 
 def analyze_user_input(user_text, current_params=None, active_param=None, lang='he', retry_count=0, chat_history=None):
     if current_params is None:

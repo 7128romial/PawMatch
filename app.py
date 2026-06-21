@@ -608,7 +608,7 @@ def chat(parsed_data=None):
     nlp_result = analyze_user_input(user_message, session['text_params'], active_param=active_params_str, lang=lang, retry_count=retry_count, chat_history=chat_history)
     
     if nlp_result.get("state") == "error":
-        err_msg = "Error connecting to model. Please check API key." if lang == 'en' else "שגיאה בחיבור למודל. אנא בדוק מפתח API."
+        err_msg = "A temporary connection issue occurred. Please send your message again." if lang == 'en' else "אירעה תקלה זמנית בחיבור. נסו לשלוח את ההודעה שוב בעוד רגע."
         return jsonify({
             "response": err_msg,
             "session_data": build_session_data()
