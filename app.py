@@ -578,9 +578,11 @@ def chat(parsed_data=None):
             
             if is_off_topic:
                 msg = (
-                    f"I can only help with matching dogs for adoption. Let's focus on selecting the dog's {param_name}:\n\n{next_q}"
+                    f"Sorry, but I'm a dog-adoption matching assistant only — I can't help with other topics "
+                    f"(like the weather, recipes, code, or other animals). Let's focus on the dog's {param_name}:\n\n{next_q}"
                     if lang == 'en' else
-                    f"אני יודע לעזור רק בהתאמת כלבים לאימוץ. בואו נתמקד בבחירת {param_name} הכלב:\n\n{next_q}"
+                    f"מצטער/ת, אבל אני סוכן להתאמת כלבים לאימוץ בלבד ואיני עוסק בנושאים אחרים "
+                    f"(כמו מזג אוויר, מתכונים, קוד או חיות אחרות). בוא/י נתמקד בבחירת {param_name} הכלב:\n\n{next_q}"
                 )
             elif is_greeting:
                 msg = (
