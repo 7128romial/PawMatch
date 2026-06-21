@@ -391,22 +391,34 @@ def _deterministic_tier_a(active_param, text):
             best_len, best_val = len(k), 1
     return best_val
 
+def _token_is_mash(tok):
+    """True if a single whitespace-delimited token looks like keyboard mash."""
+    w = re.sub(r'[^A-Za-z֐-׿]', '', tok)
+    if len(w) < 4:
+        return False
+    if re.search(r'(.)\1{3,}', w):                       # 4+ identical chars in a row ("נוווווו")
+        return True
+    for unit in (1, 2, 3):                               # a short unit repeated to fill it ("אעאעאע", "כגכגכג")
+        if len(w) >= unit * 3 and len(w) % unit == 0 and w == w[:unit] * (len(w) // unit):
+            return True
+    if len(w) >= 8 and len(set(w)) / len(w) < 0.6:       # long, low-variety run ("עדגגעשגכעגכעגשכע")
+        return True
+    return False
+
 def looks_like_gibberish(text):
     """Detect clearly unintelligible input (keyboard mash / symbol-only) so the bot can
-    ask the user to rephrase instead of silently advancing to the next question. Kept
-    deliberately conservative to avoid false-positives on real short answers: only a
-    symbol-only string, or a single long (>=8) letter run with very low character variety
-    (a hallmark of keyboard mash like 'עדגגעשגכעגכעגשכע'), is treated as gibberish."""
+    ask the user to rephrase instead of silently advancing. Conservative to avoid firing
+    on real answers: a symbol-only string, a single mash token, or a multi-word message
+    with at least two mash tokens (e.g. '...נוווווו ...אעאעאע' bundled with real words)."""
     if not text:
         return False
     t = text.strip()
-    if not re.sub(r'[\s\W_]', '', t):   # nothing but punctuation/symbols ("...", "???")
+    if not re.sub(r'[\s\W_]', '', t):                    # nothing but punctuation/symbols
         return True
-    if ' ' not in t:                    # a single token, no spaces
-        letters = re.sub(r'[^A-Za-z֐-׿]', '', t)
-        if len(letters) >= 8 and len(set(letters)) / len(letters) < 0.6:
-            return True
-    return False
+    tokens = t.split()
+    if len(tokens) == 1:
+        return _token_is_mash(tokens[0])
+    return sum(_token_is_mash(tok) for tok in tokens) >= 2
 
 @app.route('/api/chat', methods=['POST'])
 def chat(parsed_data=None):

@@ -20,13 +20,19 @@ def check(text, expected):
 
 print("--- gibberish / unintelligible: must be True ---")
 for t in ["עדגגעשגכעגכעגשכע", "asdkjhaskjdh", "כגכגכגכג", "שדגשדגשדג",
-          "...", "???", "!!!", "חחחחחחחח", "aaaaaaaa"]:
+          "...", "???", "!!!", "חחחחחחחח", "aaaaaaaa",
+          # mixed: real words bundled with >=2 mash tokens (the second screenshot)
+          "כלב כלב הב הב רוצה כלב אגדחזשסימנשצ תביא לי כלב כבר עכשיו נוווווווווו אעאעאעאע",
+          "נוווווו אעאעאע"]:
     check(t, True)
 
 print("\n--- real input: must be False (no false positives) ---")
 for t in ["דירה", "בית", "בית עם חצר", "אני גר בדירה", "כל היום", "8", "שלום",
           "apartment", "I live in an apartment", "אוניברסיטה", "אינטרנט",
-          "קטן", "אין לי העדפה", "הצג תוצאות עכשיו", "לא יודע", "שעתיים", ""]:
+          "קטן", "אין לי העדפה", "הצג תוצאות עכשיו", "לא יודע", "שעתיים", "",
+          # real messages that merely contain mild repetition / eagerness — must NOT trip
+          "וואו איזה כיף", "אני רוצה כלב עכשיו", "רוצה כלב קטן ושקט", "תביא לי כלב",
+          "I live in a small apartment with my family"]:
     check(t, False)
 
 print(f"\n=== {passed} passed, {failed} failed ===")
